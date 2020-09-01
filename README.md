@@ -1,1 +1,2 @@
-# SABot
+# SABot : DiscordBot
+## Python
