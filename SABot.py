@@ -15,7 +15,7 @@ bot = commands.Bot(command_prefix = "!", status = discord.Status.online, activit
 
 #Bot initialization
 @bot.event
-async def on_ready(ctx):
+async def on_ready():
     print("We have logged in as {0.user}".format(bot))
     await ctx.send("logged in")
 @bot.command()
