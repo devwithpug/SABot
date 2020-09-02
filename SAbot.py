@@ -21,5 +21,7 @@ async def on_ready():
 @bot.command()
 async def test(ctx):
     await ctx.send("hello")
+async def hello(ctx):
+    await ctx.send("hiiiiii")
 
 bot.run(token)
