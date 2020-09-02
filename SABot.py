@@ -18,7 +18,9 @@ bot = commands.Bot(command_prefix = "!", status = discord.Status.online, activit
 async def on_ready(ctx):
     print("We have logged in as {0.user}".format(bot))
     await ctx.send("logged in")
-
+@bot.command()
+async def joined(ctx, *, member: discord.VoiceChannel):
+    await ctx.send("{0} joined on {0.joined_at}".format(member))
 @bot.command()
 async def test(ctx):
     await ctx.send("hello")
