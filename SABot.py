@@ -1,7 +1,6 @@
-import discord
-import asyncio
-import os
+import discord, asyncio, os, requests
 from discord.ext import commands
+from bs4 import BeautifulSoup
 
 #Get Token
 token_path = os.path.dirname(os.path.abspath(__file__)) + "/.token"
@@ -11,7 +10,8 @@ print("Token_Key : ", token)
 
 #Bot Settings
 game = discord.Game("상태창 메세지")
-bot = commands.Bot(command_prefix = "!", status = discord.Status.online, activity = game)
+prefix = '!'
+bot = commands.Bot(command_prefix = prefix, status = discord.Status.online, activity = game)
 
 #Bot events
 @bot.event
@@ -43,5 +43,22 @@ async def debug(ctx):
             value += member.name + " / " + "None" + "\n"
     embed.add_field(name = "Name / Nickname", value = value, inline = False)
     await ctx.send(embed = embed)
+@bot.command()
+async def l(ctx):
+    args = ctx.message.content[len(prefix+"l "):].split(' ')
+    if len(args) < 2:
+        return
+    name = ' '.join(args[2:len(args)])
+    if args[0] == 's':
+        req = requests.get('https://www.op.gg/summoner/userName=' + name)
+        html = req.text
+        soup = BeautifulSoup(html, 'html.parser')
+        rank = soup.find_all('meta', {'name': 'description'})
+        await ctx.send(rank)
+
+    elif args[0] == 'c':
+        req = requests.get('')
+    else:
+        print("wrong input2")
     
 bot.run(token)
