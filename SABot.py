@@ -46,9 +46,10 @@ async def debug(ctx):
 @bot.command()
 async def l(ctx):
     args = ctx.message.content[len(prefix+"l "):].split(' ')
+    print(args)
     if len(args) < 2:
         return
-    name = ' '.join(args[2:len(args)])
+    name = ' '.join(args[1:len(args)])
     if args[0] == 's':
         req = requests.get('https://www.op.gg/summoner/userName=' + name)
         html = req.text
