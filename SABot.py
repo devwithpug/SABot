@@ -54,9 +54,12 @@ async def l(ctx):
         req = requests.get('https://www.op.gg/summoner/userName=' + name)
         html = req.text
         soup = BeautifulSoup(html, 'html.parser')
-        rank = soup.find_all('meta', {'name': 'description'})
-        await ctx.send(rank)
-
+        tmp = str(soup.find_all('meta', {'name': 'description'}))
+        result = tmp[tmp.find('="')+2:tmp.find('" name')].split(' / ')
+        embed =  discord.Embed()
+        embed.set_author(name = result[0])
+        embed.add_field(name = result[1]+" / "+result[2], value = result[3])
+        await ctx.send(embed = embed)
     elif args[0] == 'c':
         req = requests.get('')
     else:
