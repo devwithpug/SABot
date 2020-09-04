@@ -44,18 +44,18 @@ async def debug(ctx):
     embed.add_field(name = "Name / Nickname", value = value, inline = False)
     await ctx.send(embed = embed)
 @bot.command()
-async def l(ctx):
+async def 롤(ctx):
     args = ctx.message.content[len(prefix+"l "):].split(' ')
-    print(args)
-    if len(args) < 2:
-        return
     name = ' '.join(args[1:len(args)])
-    if args[0] == 's':
+    if args[0] == '닉' and len(args) > 1:
         req = requests.get('https://www.op.gg/summoner/userName=' + name)
         html = req.text
         soup = BeautifulSoup(html, 'html.parser')
         tmp = str(soup.find_all('meta', {'name': 'description'}))
         result = tmp[tmp.find('="')+2:tmp.find('" name')].split(' / ')
+        if len(result) < 4:
+            await ctx.send(embed = discord.Embed(title = "등록되지 않은 소환사입니다. 오타를 확인 후 다시 검색해주세요."))
+            return
         embed =  discord.Embed()
         embed.set_author(name = result[0])
         embed.add_field(name = result[1]+" / "+result[2], value = result[3])
@@ -63,6 +63,6 @@ async def l(ctx):
     elif args[0] == 'c':
         req = requests.get('')
     else:
-        print("wrong input2")
+        await ctx.send(embed = discord.Embed(title = "!롤 닉 [닉네임]\nex) !롤 닉 우리 퍼그 귀엽죠"))
     
 bot.run(token)
