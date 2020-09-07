@@ -1,7 +1,7 @@
 import discord, asyncio, os, requests
 from discord.ext import commands
 from bs4 import BeautifulSoup
-
+import watcher
 #Get Token
 token_path = os.path.dirname(os.path.abspath(__file__)) + "/.token"
 t = open(token_path, "r", encoding="utf-8")
@@ -44,10 +44,10 @@ async def debug(ctx):
     embed.add_field(name = "Name / Nickname", value = value, inline = False)
     await ctx.send(embed = embed)
 @bot.command()
-async def 롤(ctx):
+async def l(ctx):
     args = ctx.message.content[len(prefix+"l "):].split(' ')
     name = ' '.join(args[1:len(args)])
-    if args[0] == '닉' and len(args) > 1:
+    if args[0] == 'nick' and len(args) > 1:
         req = requests.get('https://www.op.gg/summoner/userName=' + name)
         html = req.text
         soup = BeautifulSoup(html, 'html.parser')
@@ -60,9 +60,10 @@ async def 롤(ctx):
         embed.set_author(name = result[0])
         embed.add_field(name = result[1]+" / "+result[2], value = result[3])
         await ctx.send(embed = embed)
-    elif args[0] == 'c':
-        req = requests.get('')
+    elif args[0] == 'currentGame' and len(args) > 1:
+        wt = watcher.watcher()
+        await ctx.send(wt.live_match(name))
     else:
-        await ctx.send(embed = discord.Embed(title = "!롤 닉 [닉네임]\nex) !롤 닉 우리 퍼그 귀엽죠"))
-    
+        await ctx.send(embed = discord.Embed(title = "!l nick [summonerName]\n!l currentGame [summonerName]\nex) !l nick hide on bush"))
+
 bot.run(token)

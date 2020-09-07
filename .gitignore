@@ -3,3 +3,6 @@
 .*.py.[s]
 *~
 .token
+.riot_api_key
+__pycache__/
+*.pyc
