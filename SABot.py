@@ -1,4 +1,5 @@
 import discord, asyncio, os, requests
+from discord import Webhook, RequestsWebhookAdapter
 from discord.ext import commands
 from bs4 import BeautifulSoup
 import watcher
@@ -31,7 +32,7 @@ async def on_voice_state_update(member, before, after):
 async def joined(ctx, *, member: discord.VoiceChannel):
     await ctx.send("{0} joined on {0.joined_at}".format(member))
 @bot.command()
-async def debug(ctx):
+async def users(ctx):
     embed = discord.Embed()
     embed.set_author(name = ctx.guild.name+" Member list")
     embed.set_thumbnail(url=ctx.guild.icon_url)
@@ -47,6 +48,7 @@ async def debug(ctx):
 async def l(ctx):
     args = ctx.message.content[len(prefix+"l "):].split(' ')
     name = ' '.join(args[1:len(args)])
+    wt = watcher.watcher()
     if args[0] == 'nick' and len(args) > 1:
         req = requests.get('https://www.op.gg/summoner/userName=' + name)
         html = req.text
@@ -61,8 +63,22 @@ async def l(ctx):
         embed.add_field(name = result[1]+" / "+result[2], value = result[3])
         await ctx.send(embed = embed)
     elif args[0] == 'currentGame' and len(args) > 1:
-        wt = watcher.watcher()
-        await ctx.send(wt.live_match(name))
+        d = wt.live_match(name)
+        content = "```"+str(d[0]['gameQueueConfigId'])+" | "+d[0]['gameMode']+" | "+str(int(d[0]['gameLength']/60))+":"+str(d[0]['gameLength']%60)+"\n"
+        content += "Blue Team\n"
+        for i in range(0, 5):
+            if d[1][i]['tier'] == 'unranked':
+                content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+"\n"
+            else:
+                content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank']+" | "+str(100*round(int(d[1][i]['wins'])/(int(d[1][i]['wins']) + int(d[1][i]['losses'])), 2))+"% | "+str(d[1][i]['wins'])+" wins | "+str(d[1][i]['losses'])+" losses \n"
+        content += "Red Team\n"
+        for i in range(5, 10):
+            if d[1][i]['tier'] == 'unranked':
+                content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+"\n"
+            else:
+                content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank']+" | "+str(100*round(int(d[1][i]['wins'])/(int(d[1][i]['wins']) + int(d[1][i]['losses'])), 2))+"% | "+str(d[1][i]['wins'])+" wins | "+str(d[1][i]['losses'])+" losses \n"
+        content += "```"
+        await ctx.send(content = content)
     else:
         await ctx.send(embed = discord.Embed(title = "!l nick [summonerName]\n!l currentGame [summonerName]\nex) !l nick hide on bush"))
 
