@@ -20,7 +20,7 @@ class watcher:
     
     def add_summoner(self, summonerName = str):
         try:
-            me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
+            me = self.lol_watcaher.summoner.by_name(self.my_region, summonerName)
         except ApiError as err:
             if err.response.status_code == 429:
                 print("error 429")
@@ -40,6 +40,7 @@ class watcher:
                 print("error 404")
                 return "등록되지 않은 소환사입니다."
         data = []
+        print(str(me))
         try:
             match = self.lol_watcher.spectator.by_summoner(self.my_region, me['id'])
         except ApiError as err:
