@@ -28,6 +28,7 @@ class watcher:
             elif err.response.status_code == 404:
                 print("error 404")
                 return "등록되지 않은 소환사입니다."
+        me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
         data = []
         try:
             match = self.lol_watcher.spectator.by_summoner(self.my_region, me['id'])
