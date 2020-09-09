@@ -1,9 +1,11 @@
 # SABot : DiscordBot
 ## How to set up:
 
-Discord token file : `.token` in your directory with `SAbot.py`
+Discord token file : `.token` in your directory with `SABot.py`
 
-Riot API key file : `.riot_api_key` in your directory with `SAbot.py`
+Riot API key file : `.riot_api_key` in your directory with `SABot.py`
+
+Run `SABot.py`. That's it!
 
 ## Features:
 

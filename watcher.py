@@ -17,11 +17,38 @@ class watcher:
     latest = lol_watcher.data_dragon.versions_for_region(my_region)
     champ_version = latest['n']['champion']
     static_champ_list = lol_watcher.data_dragon.champions(champ_version, False, 'ko_KR')
-
+    
+    def add_summoner(self, summonerName = str):
+        try:
+            me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
+        except ApiError as err:
+            if err.response.status_code == 429:
+                print("error 429")
+                return "{}초 후에 다시 시도하세요.".format(err.headers['Retry-After'])
+            elif err.response.status_code == 404:
+                print("error 404")
+                return "등록되지 않은 소환사입니다."
+    
     def live_match(self, summonerName = str):
-        me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
+        try:
+            me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
+        except ApiError as err:
+            if err.response.status_code == 429:
+                print("error 429")
+                return "{}초 후에 다시 시도하세요.".format(err.headers['Retry-After'])
+            elif err.response.status_code == 404:
+                print("error 404")
+                return "등록되지 않은 소환사입니다."
         data = []
-        match = self.lol_watcher.spectator.by_summoner(self.my_region, me['id'])
+        try:
+            match = self.lol_watcher.spectator.by_summoner(self.my_region, me['id'])
+        except ApiError as err:
+            if err.response.status_code == 429:
+                print("error 429")
+                return "{}초 후에 다시 시도하세요.".format(err.headers['Retry-After'])
+            elif err.response.status_code == 404:
+                print("error 404")
+                return "진행중인 게임이 없습니다."
         match_data = {}
         match_data['gameId'] = match['gameId']
         match_data['gameType'] = match['gameType']
@@ -56,12 +83,9 @@ class watcher:
                 participants[i]['leaguePoints'] = row[0]['leaguePoints']
                 participants[i]['wins'] = row[0]['wins']
                 participants[i]['losses'] = row[0]['losses']
+                participants[i]['avarage'] = round(row[0]['wins']/(row[0]['wins']+row[0]['losses'])*100, 2)
             else:
                 participants[i]['tier'] = "unranked"
-                participants[i]['rank'] = " "
-                participants[i]['leaguePoints'] = " "
-                participants[i]['wins'] = " "
-                participants[i]['losses'] = " "
                 
             i += 1
         

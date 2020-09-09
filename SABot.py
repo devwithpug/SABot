@@ -64,19 +64,22 @@ async def l(ctx):
         await ctx.send(embed = embed)
     elif args[0] == 'currentGame' and len(args) > 1:
         d = wt.live_match(name)
+        if type(d) is str:
+            await ctx.send(embed = discord.Embed(title = d))
+            return
         content = "```"+str(d[0]['gameQueueConfigId'])+" | "+d[0]['gameMode']+" | "+str(int(d[0]['gameLength']/60))+":"+str(d[0]['gameLength']%60)+"\n"
         content += "Blue Team\n"
         for i in range(0, 5):
             if d[1][i]['tier'] == 'unranked':
                 content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+"\n"
             else:
-                content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank']+" | "+str(100*round(int(d[1][i]['wins'])/(int(d[1][i]['wins']) + int(d[1][i]['losses'])), 2))+"% | "+str(d[1][i]['wins'])+" wins | "+str(d[1][i]['losses'])+" losses \n"
+                content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank']+" | "+str(d[1][i]['avarage'])+"% | "+str(d[1][i]['wins'])+" wins | "+str(d[1][i]['losses'])+" losses \n"
         content += "Red Team\n"
         for i in range(5, 10):
             if d[1][i]['tier'] == 'unranked':
                 content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+"\n"
             else:
-                content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank']+" | "+str(100*round(int(d[1][i]['wins'])/(int(d[1][i]['wins']) + int(d[1][i]['losses'])), 2))+"% | "+str(d[1][i]['wins'])+" wins | "+str(d[1][i]['losses'])+" losses \n"
+                content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank']+" | "+str(d[1][i]['avarage'])+"% | "+str(d[1][i]['wins'])+" wins | "+str(d[1][i]['losses'])+" losses \n"
         content += "```"
         await ctx.send(content = content)
     else:
