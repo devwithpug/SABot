@@ -18,17 +18,6 @@ class watcher:
     champ_version = latest['n']['champion']
     static_champ_list = lol_watcher.data_dragon.champions(champ_version, False, 'ko_KR')
     
-    def add_summoner(self, summonerName = str):
-        try:
-            me = self.lol_watcaher.summoner.by_name(self.my_region, summonerName)
-        except ApiError as err:
-            if err.response.status_code == 429:
-                print("error 429")
-                return "{}초 후에 다시 시도하세요.".format(err.headers['Retry-After'])
-            elif err.response.status_code == 404:
-                print("error 404")
-                return "등록되지 않은 소환사입니다."
-    
     def live_match(self, summonerName = str):
         try:
             me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
@@ -40,7 +29,6 @@ class watcher:
                 print("error 404")
                 return "등록되지 않은 소환사입니다."
         data = []
-        print(str(me))
         try:
             match = self.lol_watcher.spectator.by_summoner(self.my_region, me['id'])
         except ApiError as err:
