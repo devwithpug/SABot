@@ -23,21 +23,26 @@ class watcher:
             me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
         except ApiError as err:
             if err.response.status_code == 429:
-                print("error 429")
+                print("error 429 Rate limit exceeded")
                 return "{}초 후에 다시 시도하세요.".format(err.headers['Retry-After'])
             elif err.response.status_code == 404:
-                print("error 404")
+                print("error 404 Data not found")
                 return "등록되지 않은 소환사입니다."
-        me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
+            elif err.response.status_code == 403:
+                print("error 403 Forbidden : Check your riot_api_key !!!")
+                return "ERROR 403 Forbidden : Check your riot_api_key !!!"
+            else:
+                print("error "+ err.response.status_code)
+                return "ERROR OCCURED : Check your console !!!"
         data = []
         try:
             match = self.lol_watcher.spectator.by_summoner(self.my_region, me['id'])
         except ApiError as err:
             if err.response.status_code == 429:
-                print("error 429")
+                print("error 429 Rate limit exceeded")
                 return "{}초 후에 다시 시도하세요.".format(err.headers['Retry-After'])
             elif err.response.status_code == 404:
-                print("error 404")
+                print("error 404 Data not found")
                 return "진행중인 게임이 없습니다."
         match_data = {}
         match_data['gameId'] = match['gameId']

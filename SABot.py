@@ -1,6 +1,6 @@
-import discord, asyncio, os, requests
+import discord, asyncio, os, requests, time
 from discord import Webhook, RequestsWebhookAdapter
-from discord.ext import commands
+from discord.ext import commands, tasks
 from bs4 import BeautifulSoup
 import watcher
 #Get Token
@@ -18,6 +18,8 @@ bot = commands.Bot(command_prefix = prefix, status = discord.Status.online, acti
 @bot.event
 async def on_ready():
     print("We have logged in as {0.user}".format(bot))
+    bot.loop.create_task(live_game_tracker())
+    
 @bot.event
 async def on_voice_state_update(member, before, after):
     if before.channel is None and after.channel is not None and after.channel is not member.guild.afk_channel:
@@ -84,5 +86,12 @@ async def l(ctx):
         await ctx.send(content = content)
     else:
         await ctx.send(embed = discord.Embed(title = "!l nick [summonerName]\n!l currentGame [summonerName]\nex) !l nick hide on bush"))
+
+
+async def live_game_tracker():
+    while True:
+        print("live_game is traking... at "+ time.strftime('%c', time.localtime(time.time())))
+        print("summoner list")
+        await asyncio.sleep(60)
 
 bot.run(token)
