@@ -138,12 +138,12 @@ class watcher:
         for participant in data[1]:
             row = self.lol_watcher.league.by_summoner(self.my_region, participant['summonerId'])
             if len(row) != 0:
-                participants[i]['tier'] = row[0]['tier']
-                participants[i]['rank'] = row[0]['rank']
-                participants[i]['leaguePoints'] = row[0]['leaguePoints']
-                participants[i]['wins'] = row[0]['wins']
-                participants[i]['losses'] = row[0]['losses']
-                participants[i]['avarage'] = round(row[0]['wins']/(row[0]['wins']+row[0]['losses'])*100, 2)
+                participants[i]['tier'] = row[-1]['tier']
+                participants[i]['rank'] = row[-1]['rank']
+                participants[i]['leaguePoints'] = row[-1]['leaguePoints']
+                participants[i]['wins'] = row[-1]['wins']
+                participants[i]['losses'] = row[-1]['losses']
+                participants[i]['avarage'] = round(row[-1]['wins']/(row[-1]['wins']+row[-1]['losses'])*100, 2)
             else:
                 participants[i]['tier'] = "unranked"
                 

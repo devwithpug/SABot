@@ -23,10 +23,10 @@ async def on_ready():
 @bot.event
 async def on_voice_state_update(member, before, after):
     if before.channel is None and after.channel is not None and after.channel is not member.guild.afk_channel:
-        embed = discord.Embed(title = member.name + " 님이 " + after.channel.name + " 보이스 채널에 접속했습니다.")
+        embed = discord.Embed(title = member.nick + " 님이 " + after.channel.name + " 보이스 채널에 접속했습니다.")
         await member.guild.system_channel.send(embed = embed)
     if after.channel is member.guild.afk_channel:
-        embed = discord.Embed(title = member.name + " 님이 개인적인 시간을 보내러 갔어요. ㅎㅎ;")
+        embed = discord.Embed(title = member.nick + " 님이 개인적인 시간을 보내러 갔어요. ㅎㅎ;")
         await member.guild.system_channel.send(embed = embed)
 
 #Bot commands
@@ -72,12 +72,8 @@ async def l(ctx):
         d = wt.edit_summoner_list(False, name)
         await ctx.send(embed = discord.Embed(title = d))
     else:
-        await ctx.send(embed = discord.Embed(title = "!l nick [summonerName]\n\
-                                                    !l currentGame [summonerName]\n\
-                                                    ex) !l nick hide on bush\n\n\
-                                                    LOL live-game-tracker\n\
-                                                    !l add [summonerName]\n\
-                                                    !l remove [summonerName]"))
+        await ctx.send(embed = discord.Embed(title = "Check available commands : https://github.com/Jungyu-Choi/SABot"))
+    
 
 
 async def live_game_tracker():
