@@ -1,17 +1,20 @@
 from riotwatcher import LolWatcher, ApiError
 import pandas as pd
-import os, time, requests
+import os
+import time
+import requests
 
 
 class watcher:
-    #Get riot_api_key
+    # Get riot_api_key
     token_path = os.path.dirname(os.path.abspath(__file__)) + "/.riot_api_key"
     t = open(token_path, "r", encoding="utf-8")
     riot_api_key = t.read().split()[0]
     print("riot_api_key : ", riot_api_key)
-    
-    #Get summoner_list
-    summoner_list_path = os.path.dirname(os.path.abspath(__file__)) + "/.summoner_list"
+
+    # Get summoner_list
+    summoner_list_path = os.path.dirname(
+        os.path.abspath(__file__)) + "/.summoner_list"
     try:
         f = open(summoner_list_path, "r", encoding="utf-8")
     except FileNotFoundError:
@@ -29,10 +32,12 @@ class watcher:
 
     latest = lol_watcher.data_dragon.versions_for_region(my_region)
     champ_version = latest['n']['champion']
-    static_champ_list = lol_watcher.data_dragon.champions(champ_version, False, 'ko_KR')
-    queues = requests.get('http://static.developer.riotgames.com/docs/lol/queues.json').json()
+    static_champ_list = lol_watcher.data_dragon.champions(
+        champ_version, False, 'ko_KR')
+    queues = requests.get(
+        'http://static.developer.riotgames.com/docs/lol/queues.json').json()
     live_game_id = []
-    
+
     def get_summoner_list(self):
         return self.summoner_list_temp
 
@@ -46,10 +51,12 @@ class watcher:
                 except BaseException as err:
                     print("ERROR OCCURED! \n", err)
                     return "ERROR OCCURED : Check your console !!!"
-                self.summoner_list_temp = [name.rstrip() for name in self.summoner_list]
+                self.summoner_list_temp = [name.rstrip()
+                                           for name in self.summoner_list]
                 with open(self.summoner_list_path, "w", encoding="utf-8") as f:
                     f.writelines(self.summoner_list)
-                print(summonerName+" Added at "+ time.strftime('%c', time.localtime(time.time())))
+                print(summonerName+" Added at " +
+                      time.strftime('%c', time.localtime(time.time())))
                 return "등록 성공"
         elif not add:
             try:
@@ -57,15 +64,18 @@ class watcher:
             except ValueError as err:
                 print("ERROR OCCURED! \n", err)
                 return "ERROR OCCURED : Check your console !!!"
-            self.summoner_list_temp = [name.rstrip() for name in self.summoner_list]
+            self.summoner_list_temp = [name.rstrip()
+                                       for name in self.summoner_list]
             with open(self.summoner_list_path, "w", encoding="utf-8") as f:
                 f.writelines(self.summoner_list)
-            print(summonerName+" Removed at "+ time.strftime('%c', time.localtime(time.time())))
+            print(summonerName+" Removed at " +
+                  time.strftime('%c', time.localtime(time.time())))
             return "삭제 성공"
 
-    def live_match(self, summonerName = str):
+    def live_match(self, summonerName=str):
         try:
-            me = self.lol_watcher.summoner.by_name(self.my_region, summonerName)
+            me = self.lol_watcher.summoner.by_name(
+                self.my_region, summonerName)
         except ApiError as err:
             if err.response.status_code == 429:
                 print("error 429 Rate limit exceeded")
@@ -77,11 +87,12 @@ class watcher:
                 print("error 403 Forbidden : Check your riot_api_key !!!")
                 return "`ERROR 403 Forbidden : Check your riot_api_key !!!`"
             else:
-                print("error "+ err.response.status_code)
+                print("error " + err.response.status_code)
                 return "`ERROR OCCURED : Check your console !!!`"
         data = []
         try:
-            match = self.lol_watcher.spectator.by_summoner(self.my_region, me['id'])
+            match = self.lol_watcher.spectator.by_summoner(
+                self.my_region, me['id'])
         except ApiError as err:
             if err.response.status_code == 429:
                 print("error 429 Rate limit exceeded")
@@ -94,7 +105,7 @@ class watcher:
         if not match['gameId'] in self.live_game_id:
             self.live_game_id.append(match['gameId'])
             print("new live game added : ", match['gameId'])
-            print("Current tracking live_game_id list : "+ str(self.live_game_id))
+            print("Current tracking live_game_id list : " + str(self.live_game_id))
         else:
             for gameId in self.live_game_id:
                 try:
@@ -106,7 +117,6 @@ class watcher:
                     elif err.response.status_code == 403:
                         print("error 403 Forbidden : Check your riot_api_key !!!")
                 return
-        
 
         match_data['gameId'] = match['gameId']
         match_data['gameType'] = match['gameType']
@@ -136,19 +146,21 @@ class watcher:
         data.append(participants)
         i = 0
         for participant in data[1]:
-            row = self.lol_watcher.league.by_summoner(self.my_region, participant['summonerId'])
+            row = self.lol_watcher.league.by_summoner(
+                self.my_region, participant['summonerId'])
             if len(row) != 0:
                 participants[i]['tier'] = row[-1]['tier']
                 participants[i]['rank'] = row[-1]['rank']
                 participants[i]['leaguePoints'] = row[-1]['leaguePoints']
                 participants[i]['wins'] = row[-1]['wins']
                 participants[i]['losses'] = row[-1]['losses']
-                participants[i]['avarage'] = round(row[-1]['wins']/(row[-1]['wins']+row[-1]['losses'])*100, 2)
+                participants[i]['avarage'] = round(
+                    row[-1]['wins']/(row[-1]['wins']+row[-1]['losses'])*100, 2)
             else:
                 participants[i]['tier'] = "unranked"
-                
+
             i += 1
-        
+
         df = pd.DataFrame(participants)
         print(df)
         return data
