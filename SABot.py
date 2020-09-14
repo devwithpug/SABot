@@ -31,11 +31,20 @@ async def on_ready():
 @bot.event
 async def on_voice_state_update(member, before, after):
     if before.channel is None and after.channel is not None and after.channel is not member.guild.afk_channel:
-        embed = discord.Embed(title=member.nick + " 님이 " +
-                              after.channel.name + " 보이스 채널에 접속했습니다.")
+        if member.nick is not None:
+            embed = discord.Embed(title=member.nick + " 님이 " +
+                                  after.channel.name + " 보이스 채널에 접속했습니다.")
+        else:
+            embed = discord.Embed(title=member.name + " 님이 " +
+                                  after.channel.name + " 보이스 채널에 접속했습니다.")
         await member.guild.system_channel.send(embed=embed)
     if after.channel is member.guild.afk_channel:
-        embed = discord.Embed(title=member.nick + " 님이 개인적인 시간을 보내러 갔어요. ㅎㅎ;")
+        if member.nick is not None:
+            embed = discord.Embed(title=member.nick +
+                                  " 님이 개인적인 시간을 보내러 갔어요. ㅎㅎ;")
+        else:
+            embed = discord.Embed(title=member.name +
+                                  " 님이 개인적인 시간을 보내러 갔어요. ㅎㅎ;")
         await member.guild.system_channel.send(embed=embed)
 
 # Bot commands
@@ -89,6 +98,7 @@ async def commands(ctx):
     await ctx.send(embed=discord.Embed(title="Check available commands : https://github.com/Jungyu-Choi/SABot"))
 
 
+@bot.command()
 async def users(ctx):
     embed = discord.Embed()
     embed.set_author(name=ctx.guild.name+" Member list")
