@@ -139,9 +139,8 @@ async def users(ctx):
 @bot.command()
 async def l(ctx, *args):
 
-    name = " ".join(args[1:])
-
     if args[0] == 'nick' and len(args) > 1:
+        name = " ".join(args[1:])
         req = requests.get('https://www.op.gg/summoner/userName=' + name)
         html = req.text
         soup = BeautifulSoup(html, 'html.parser')
@@ -159,13 +158,16 @@ async def l(ctx, *args):
         await ctx.send(embed=embed)
 
     elif args[0] == 'currentGame' and len(args) > 1:
+        name = " ".join(args[1:])
         await ctx.send(content=preview_current_game(name))
 
     elif args[0] == 'add' and len(args) > 1:
+        name = " ".join(args[1:])
         d = wt.edit_summoner_list(str(ctx.guild.id), True, name)
         await ctx.send(embed=discord.Embed(title=d))
 
     elif args[0] == 'remove' and len(args) > 1:
+        name = " ".join(args[1:])
         d = wt.edit_summoner_list(str(ctx.guild.id), False, name)
         await ctx.send(embed=discord.Embed(title=d))
 
