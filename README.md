@@ -1,4 +1,11 @@
 # SABot : DiscordBot
+## Invite SABot to your own Discord Channel:
+
+Inviting SABot to your Discord Channel, you don't need to set up a `SABot` files.
+And you just need to use the commands below.
+
+https://discord.com/api/oauth2/authorize?client_id=749632311208706073&permissions=8&scope=bot
+
 ## How to set up:
 
 Discord token file : `.token` in your directory with `SABot.py`
