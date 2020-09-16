@@ -150,6 +150,13 @@ class watcher:
             elif err.response.status_code == 404:
                 print("error 404 Data not found : "+summonerName)
                 return
+            elif err.response.status_code == 403:
+                print("error 403 Forbidden : Check your riot_api_key !!!")
+                return "`ERROR 403 Forbidden : Check your riot_api_key !!!`"
+            else:
+                print("error " + err.response.status_code)
+                return "`ERROR OCCURED : Check your console !!!`"
+
         match_data = {}
 
         if guild_id is not None:
