@@ -149,7 +149,7 @@ class watcher:
                 return "`잠시 후에 다시 시도하세요.`"
             elif err.response.status_code == 404:
                 print("error 404 Data not found : "+summonerName)
-                return
+                return "`"+summonerName+" 님은 현재 게임중이 아닙니다.`"
             elif err.response.status_code == 403:
                 print("error 403 Forbidden : Check your riot_api_key !!!")
                 return "`ERROR 403 Forbidden : Check your riot_api_key !!!`"
