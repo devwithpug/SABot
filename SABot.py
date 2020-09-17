@@ -163,6 +163,10 @@ async def l(ctx, *args):
         await ctx.send(embed=embed)
 
     elif args[0] == 'currentGame' and len(args) > 1:
+        content = preview_current_game(name)
+        if content is None:
+            await ctx.send(embed=discord.Embed(title="{} 님은 현재 게임중이 아닙니다.".format(name)))
+            return
         await ctx.send(content=preview_current_game(name))
 
     elif args[0] == 'add' and len(args) > 1:
