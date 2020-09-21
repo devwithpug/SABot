@@ -44,6 +44,7 @@ class watcher:
                 f = open(path, "r", encoding="utf-8")
             self.set_summoner_list(f, path[path.find('list_')+5:])
             f.close()
+        print("[Live_game_tracker]Done")
 
     def get_path(self, paths, guild_id):
         for path in paths:
@@ -148,8 +149,6 @@ class watcher:
                 print("error 429 Rate limit exceeded")
                 return "`잠시 후에 다시 시도하세요.`"
             elif err.response.status_code == 404:
-                if debug:
-                    print("error 404 Data not found : "+summonerName)
                 return
             elif err.response.status_code == 403:
                 print("error 403 Forbidden : Check your riot_api_key !!!")
