@@ -19,6 +19,7 @@ prefix = '!'
 bot = commands.Bot(command_prefix=prefix,
                    status=discord.Status.online, activity=game)
 wt = watcher.watcher()
+debug = False
 
 
 # Bot events
@@ -27,6 +28,7 @@ wt = watcher.watcher()
 @bot.event
 async def on_ready():
     print("We have logged in as {0.user}".format(bot))
+    print("Guild List : {}".format(str(bot.guilds)))
     wt.init_summoner_list(bot.guilds)
     live_game_tracker.start()
 
@@ -184,11 +186,12 @@ async def l(ctx, *args):
 @tasks.loop(seconds=60.0)
 async def live_game_tracker():
     for guild in bot.guilds:
-        print("[Live_game_tracker]guild id : ", guild.id)
-        print("[Live_game_tracker]live_game is traking... at " +
-              time.strftime('%c', time.localtime(time.time())))
-        print("[Live_game_tracker]summoner list : ",
-              wt.get_summoner_list(str(guild.id)))
+        if debug:
+            print("[Live_game_tracker]guild id : ", guild.id)
+            print("[Live_game_tracker]live_game is traking... at " +
+                  time.strftime('%c', time.localtime(time.time())))
+            print("[Live_game_tracker]summoner list : ",
+                  wt.get_summoner_list(str(guild.id)))
         for summonerName in wt.get_summoner_list(str(guild.id)):
             content = preview_current_game(summonerName, str(guild.id))
             if content is not None:
