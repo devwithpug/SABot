@@ -77,6 +77,8 @@ async def on_voice_state_update(member, before, after):
 
 @bot.command()
 async def alarm(ctx):
+    print("[{}, {}] {} : {}".format(time.strftime('%c', time.localtime(
+        time.time())), ctx.guild.name, ctx.author, ctx.message.content))
 
     await ctx.send(embed=discord.Embed(title="(d) : Day, (h) : Hour, (m) : Minute").set_author(name="알람) 타입 설정"))
 
@@ -120,11 +122,15 @@ async def alarm(ctx):
 
 @bot.command()
 async def command(ctx):
+    print("[{}, {}] {} : {}".format(time.strftime('%c', time.localtime(
+        time.time())), ctx.guild.name, ctx.author, ctx.message.content))
     await ctx.send(embed=discord.Embed(title="Check available commands : https://github.com/Jungyu-Choi/SABot"))
 
 
 @bot.command()
 async def users(ctx):
+    print("[{}, {}] {} : {}".format(time.strftime('%c', time.localtime(
+        time.time())), ctx.guild.name, ctx.author, ctx.message.content))
     embed = discord.Embed()
     embed.set_author(name=ctx.guild.name+" Member list")
     embed.set_thumbnail(url=ctx.guild.icon_url)
@@ -140,6 +146,8 @@ async def users(ctx):
 
 @bot.command()
 async def l(ctx, *args):
+    print("[{}, {}] {} : {}".format(time.strftime('%c', time.localtime(
+        time.time())), ctx.guild.name, ctx.author, ctx.message.content))
 
     if not args:
         await ctx.send(embed=discord.Embed(title="Check available commands : https://github.com/Jungyu-Choi/SABot"))

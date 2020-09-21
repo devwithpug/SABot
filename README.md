@@ -4,7 +4,7 @@
 Inviting `SABot` to your Discord Channel, you don't need to set up a `SABot` files.
 And you just need to use the commands below.
 
-https://discord.com/api/oauth2/authorize?client_id=749632311208706073&permissions=8&scope=bot
+My Riot API Key status is 'Panding' now, so When RiotAPI is approved, I will add a SABot invite link. Sorry!
 
 ## How to set up:
 
