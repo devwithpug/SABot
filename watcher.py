@@ -127,7 +127,7 @@ class watcher:
         try:
             me = self.lol_watcher.summoner.by_name(
                 self.my_region, summonerName)
-        except ApiError as err:
+        except (ApiError, Exception) as err:
             if err.response.status_code == 429:
                 print("error 429 Rate limit exceeded")
                 return "`잠시 후에 다시 시도하세요.`"
@@ -138,13 +138,13 @@ class watcher:
                 print("error 403 Forbidden : Check your riot_api_key !!!")
                 return "`ERROR 403 Forbidden : Check your riot_api_key !!!`"
             else:
-                print("error " + err.response.status_code)
-                return "`ERROR OCCURED : Check your console !!!`"
+                print(err)
+                return "`ERROR OCCURED`"
         data = []
         try:
             match = self.lol_watcher.spectator.by_summoner(
                 self.my_region, me['id'])
-        except ApiError as err:
+        except (ApiError, Exception) as err:
             if err.response.status_code == 429:
                 print("error 429 Rate limit exceeded")
                 return "`잠시 후에 다시 시도하세요.`"
@@ -154,8 +154,8 @@ class watcher:
                 print("error 403 Forbidden : Check your riot_api_key !!!")
                 return "`ERROR 403 Forbidden : Check your riot_api_key !!!`"
             else:
-                print("error " + err.response.status_code)
-                return "`ERROR OCCURED : Check your console !!!`"
+                print(err)
+                return "`ERROR OCCURED`"
 
         match_data = {}
 
