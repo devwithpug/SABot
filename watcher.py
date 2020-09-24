@@ -26,6 +26,7 @@ class watcher:
         self.queues = requests.get(
             'http://static.developer.riotgames.com/docs/lol/queues.json').json()
         self.live_game_id = {}
+        self.ended_game_id_temp = {}
 
     def init_summoner_list(self, guilds):
         print("[Live_game_tracker]Initializing summoner_list ...")
@@ -164,24 +165,33 @@ class watcher:
                 self.live_game_id[guild_id]
             except KeyError:
                 self.live_game_id[guild_id] = []
-            if not match['gameId'] in self.live_game_id[guild_id]:
+                self.ended_game_id_temp[guild_id] = None
+            if match['gameId'] in self.live_game_id[guild_id]:
+                try:
+                    self.lol_watcher.match.by_id(
+                        self.my_region, match['gameId'])
+                except (ApiError, Exception) as err:
+                    if err.response.status_code == 404:
+                        return
+                    else:
+                        print(
+                            "Error occured at live_game_tracker. All of live_game_id data has been deleted.")
+                        print(err)
+                        self.live_game_id[guild_id].clear()
+                        self.ended_game_id_temp[guild_id] = None
+                        return
+                print("[Live_game_tracker]live-game ended / ", match['gameId'])
+                self.ended_game_id_temp[guild_id] = match['gameId']
+                self.live_game_id[guild_id].remove(match['gameId'])
+                return
+
+            else:
+                if match['gameId'] == self.ended_game_id_temp[guild_id]:
+                    return
                 self.live_game_id[guild_id].append(match['gameId'])
                 print("[Live_game_tracker]new live game added : ", match['gameId'])
                 print("[Live_game_tracker]Current tracking live_game_id list : " +
                       str(self.live_game_id[guild_id]))
-            else:
-                for gameId in self.live_game_id[guild_id]:
-                    try:
-                        self.lol_watcher.match.by_id(self.my_region, gameId)
-                    except ApiError as err:
-                        if err.response.status_code == 200:
-                            print(
-                                "[Live_game_tracker]live-game ended / ", match['gameId'])
-                            self.live_game_id[guild_id].remove(gameId)
-                        elif err.response.status_code == 403:
-                            print(
-                                "error 403 Forbidden : Check your riot_api_key !!!")
-                    return
 
         match_data['gameId'] = match['gameId']
         match_data['gameType'] = match['gameType']
