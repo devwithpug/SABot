@@ -180,7 +180,8 @@ class watcher:
                         self.live_game_id[guild_id].clear()
                         self.ended_game_id_temp[guild_id] = None
                         return
-                print("[Live_game_tracker]live-game ended / ", match['gameId'])
+                print("[{}] [Live_game_tracker] Live game ended : {}".format(
+                    time.strftime('%c', time.localtime(time.time())), match['gameId']))
                 self.ended_game_id_temp[guild_id] = match['gameId']
                 self.live_game_id[guild_id].remove(match['gameId'])
                 return
@@ -188,8 +189,11 @@ class watcher:
             else:
                 if match['gameId'] == self.ended_game_id_temp[guild_id]:
                     return
+
                 self.live_game_id[guild_id].append(match['gameId'])
-                print("[Live_game_tracker]new live game added : ", match['gameId'])
+
+                print("[{}] [Live_game_tracker] New live game added : {}".format(
+                    time.strftime('%c', time.localtime(time.time())), match['gameId']))
                 print("[Live_game_tracker]Current tracking live_game_id list : " +
                       str(self.live_game_id[guild_id]))
 
@@ -199,10 +203,15 @@ class watcher:
         match_data['mapId'] = match['mapId']
         match_data['gameLength'] = match['gameLength']
         match_data['platformId'] = match['platformId']
-        for queues in self.queues:
-            if queues['queueId'] == match['gameQueueConfigId']:
-                match_data['map'] = queues['map']
-                match_data['gameMode'] = queues['description']
+        try:
+            for queues in self.queues:
+                if queues['queueId'] == match['gameQueueConfigId']:
+                    match_data['map'] = queues['map']
+                    match_data['gameMode'] = queues['description']
+        except KeyError:
+            match_data['map'] = match['gameMode']
+            match_data['gameMode'] = match['gameType']
+
         data.append(match_data)
 
         participants = []
