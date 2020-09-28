@@ -11,12 +11,12 @@ class watcher:
         token_path = os.path.dirname(
             os.path.abspath(__file__)) + "/.riot_api_key"
         with open(token_path, "r", encoding="utf-8") as t:
-            riot_api_key = t.read().split()[0]
-        print("riot_api_key : ", riot_api_key)
+            self.riot_api_key = t.read().split()[0]
+        print("riot_api_key : ", self.riot_api_key)
 
         self.my_region = 'kr'
 
-        self.lol_watcher = LolWatcher(riot_api_key)
+        self.lol_watcher = LolWatcher(self.riot_api_key)
 
         latest = self.lol_watcher.data_dragon.versions_for_region(
             self.my_region)
@@ -137,7 +137,7 @@ class watcher:
                 return "`ERROR! 등록되지 않은 소환사입니다. : "+summonerName+"`"
             elif err.response.status_code == 403:
                 print("error 403 Forbidden : Check your riot_api_key !!!")
-                return "`ERROR 403 Forbidden : Check your riot_api_key !!!`"
+                return err.response.status_code
             else:
                 print(err)
                 return "`ERROR OCCURED`"
@@ -153,7 +153,7 @@ class watcher:
                 return
             elif err.response.status_code == 403:
                 print("error 403 Forbidden : Check your riot_api_key !!!")
-                return "`ERROR 403 Forbidden : Check your riot_api_key !!!`"
+                return err.response.status_code
             else:
                 print(err)
                 return "`ERROR OCCURED`"

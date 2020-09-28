@@ -6,21 +6,29 @@ import time
 import watcher
 from discord.ext import commands, tasks
 from bs4 import BeautifulSoup
-# Get Token
-token_path = os.path.dirname(os.path.abspath(__file__)) + "/.token"
-with open(token_path, "r", encoding="utf-8") as t:
-    token = t.read().split()[0]
-print("Token_Key : ", token)
-t.close()
 
-# Bot Settings
-game = discord.Game("!command")
-prefix = '!'
-bot = commands.Bot(command_prefix=prefix,
-                   status=discord.Status.online, activity=game)
-wt = watcher.watcher()
-debug = False
 
+class sabot:
+    def __init__(self):
+        # Get Token
+        self.token_path = os.path.dirname(
+            os.path.abspath(__file__)) + "/.token"
+        with open(self.token_path, "r", encoding="utf-8") as t:
+            self.token = t.read().split()[0]
+        print("Token_Key : ", self.token)
+        t.close()
+
+        # Bot Settings
+        self.game = discord.Game("!command")
+        self.prefix = '!'
+        self.wt = watcher.watcher()
+        self.debug = False
+        self.lt = True
+
+
+setup = sabot()
+bot = commands.Bot(command_prefix=setup.prefix,
+                   status=discord.Status.online, activity=setup.game)
 
 # Bot events
 
@@ -29,7 +37,7 @@ debug = False
 async def on_ready():
     print("We have logged in as {0.user}".format(bot))
     print("Guild List : {}".format(str(bot.guilds)))
-    wt.init_summoner_list(bot.guilds)
+    setup.wt.init_summoner_list(bot.guilds)
     live_game_tracker.start()
 
 
@@ -37,7 +45,7 @@ async def on_ready():
 async def on_guild_join(guild):
     print("SAbot joined at {} ({})".format(guild.name, guild.id))
     await guild.system_channel.send(embed=discord.Embed(title="SABot is now ONLINE =D"))
-    wt.init_summoner_list(bot.guilds)
+    setup.wt.init_summoner_list(bot.guilds)
     print("[Live_game_tracker]Restart live_game_tracker")
     live_game_tracker.restart()
 
@@ -49,6 +57,7 @@ async def on_guild_remove(guild):
         "/.summoner_list_" + str(guild.id)
     os.remove(path)
     print("{} was removed.".format(path))
+    setup.wt.init_summoner_list(bot.guilds)
     print("[Live_game_tracker]Restart live_game_tracker")
     live_game_tracker.restart()
 
@@ -180,12 +189,34 @@ async def l(ctx, *args):
         await ctx.send(content=preview_current_game(name))
 
     elif args[0] == 'add' and len(args) > 1:
-        d = wt.edit_summoner_list(str(ctx.guild.id), True, name)
+        d = setup.wt.edit_summoner_list(str(ctx.guild.id), True, name)
         await ctx.send(embed=discord.Embed(title=d))
 
     elif args[0] == 'remove' and len(args) > 1:
-        d = wt.edit_summoner_list(str(ctx.guild.id), False, name)
+        d = setup.wt.edit_summoner_list(str(ctx.guild.id), False, name)
         await ctx.send(embed=discord.Embed(title=d))
+
+    elif args[0] == 'start' and len(args) > 0:
+        if setup.lt is True:
+            await ctx.send(embed=discord.Embed(title="Live-game tracker is already working."))
+            return
+        setup.wt = watcher.watcher()
+        setup.wt.init_summoner_list(bot.guilds)
+        setup.lt = True
+        live_game_tracker.start()
+        print("[{}] [Live_game_tracker] live_game_tracker was started. ".format(
+            time.strftime('%c', time.localtime(time.time()))))
+        await ctx.send(embed=discord.Embed(title="Live-game tracker was started."))
+
+    elif args[0] == 'stop' and len(args) > 0:
+        if setup.lt is False:
+            await ctx.send(embed=discord.Embed(title="Live-game tracker was already stopped."))
+            return
+        setup.lt = False
+        live_game_tracker.stop()
+        print("[{}] [Live_game_tracker] live_game_tracker was stopped. ".format(
+            time.strftime('%c', time.localtime(time.time()))))
+        await ctx.send(embed=discord.Embed(title="Live-game tracker was stopped."))
 
     else:
         await ctx.send(embed=discord.Embed(title="Check available commands : https://github.com/Jungyu-Choi/SABot"))
@@ -194,21 +225,29 @@ async def l(ctx, *args):
 @tasks.loop(seconds=60.0)
 async def live_game_tracker():
     for guild in bot.guilds:
-        if debug:
+        if setup.debug:
             print("[Live_game_tracker]guild id : ", guild.id)
             print("[Live_game_tracker]live_game is traking... at " +
                   time.strftime('%c', time.localtime(time.time())))
             print("[Live_game_tracker]summoner list : ",
-                  wt.get_summoner_list(str(guild.id)))
-        for summonerName in wt.get_summoner_list(str(guild.id)):
+                  setup.wt.get_summoner_list(str(guild.id)))
+        for summonerName in setup.wt.get_summoner_list(str(guild.id)):
             content = preview_current_game(summonerName, str(guild.id))
-            if content is not None:
+            if type(content) is str:
                 await guild.system_channel.send(content=content)
+            elif type(content) is int:
+                await guild.system_channel.send(embed=discord.Embed(title="Riot API has expired. Live-game tracker will stopped until fixes."))
+                await guild.system_channel.send(embed=discord.Embed(title="Live-game tracker was stopped."))
+                setup.lt = False
+                live_game_tracker.stop()
+                print("[{}] [Live_game_tracker] live_game_tracker was stopped. ".format(
+                    time.strftime('%c', time.localtime(time.time()))))
+                return
 
 
 def preview_current_game(name, guild_id=None):
-    d = wt.live_match(name, guild_id)
-    if type(d) is str:
+    d = setup.wt.live_match(name, guild_id)
+    if type(d) is str or type(d) is int:
         return d
     elif d is None:
         return
@@ -283,4 +322,4 @@ def has_nick(author):
         return author.name
 
 
-bot.run(token)
+bot.run(setup.token)
