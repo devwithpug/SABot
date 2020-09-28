@@ -41,6 +41,9 @@ Live-game-tracker data file `.summoner_list` will saved in your directory with `
         !l add 'SummonerName'
         !l remove 'SummonerName'
 
+        !l start    // start live-game-tracker
+        !l stop     // stop live-game-tracker
+
 ## API Reference:
 * `discord.py` (https://github.com/Rapptz/discord.py)
 * `Riot API` (https://developer.riotgames.com/apis)
