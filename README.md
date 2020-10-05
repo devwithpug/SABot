@@ -4,7 +4,8 @@
 Inviting `SABot` to your Discord Channel, you don't need to set up a `SABot` files.
 And you just need to use the commands below.
 
-My Riot API Key status is 'Panding' now, so When RiotAPI is approved, I will add a SABot invite link. Sorry!
+
+[[KR SERVER ONLY]Invite SABot to your Discord Server](https://discord.com/api/oauth2/authorize?client_id=749632311208706073&permissions=2048&scope=bot)
 
 ## How to set up:
 
@@ -40,7 +41,7 @@ Live-game-tracker data file `.summoner_list` will saved in your directory with `
     *LOL live-game-tracker
         !l add 'SummonerName'
         !l remove 'SummonerName'
-
+        !l list
         !l start    // start live-game-tracker
         !l stop     // stop live-game-tracker
 

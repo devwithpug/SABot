@@ -72,7 +72,7 @@ class watcher:
         Returns:
             List: SummonerName list
         """
-        return self.summoner_list_temp[guild_id]
+        return self.summoner_list[str(guild_id)]
 
     def edit_summoner_list(self, guild_id, add, summonerName):
         """Operation that add or remove summonerName in summoner_list
@@ -93,7 +93,7 @@ class watcher:
                     self.summoner_list[guild_id].append(summonerName+"\n")
                 except BaseException as err:
                     print("ERROR OCCURED! \n", err)
-                    return "ERROR OCCURED : Check your console !!!"
+                    return "ERROR OCCURED"
                 self.summoner_list_temp[guild_id] = [name.rstrip()
                                                      for name in self.summoner_list[guild_id]]
                 with open(self.get_path(self.summoner_list_path, guild_id), "w", encoding="utf-8") as f:
@@ -104,9 +104,9 @@ class watcher:
         elif not add:
             try:
                 self.summoner_list[guild_id].remove(summonerName+"\n")
-            except ValueError as err:
-                print("ERROR OCCURED! \n", err)
-                return "ERROR OCCURED : Check your console !!!"
+            except ValueError:
+                print("Error : SummonerName is not in the list \n")
+                return "목록에 없는 소환사입니다. !l list를 입력하여 확인하세요."
             self.summoner_list_temp[guild_id] = [name.rstrip()
                                                  for name in self.summoner_list[guild_id]]
             with open(self.get_path(self.summoner_list_path, guild_id), "w", encoding="utf-8") as f:
@@ -114,6 +114,13 @@ class watcher:
             print(summonerName+" Removed at " +
                   time.strftime('%c', time.localtime(time.time())))
             return "삭제 성공"
+
+    def test_riot_api(self, name='hide on bush'):
+        try:
+            self.lol_watcher.summoner.by_name(self.my_region, name)
+        except (ApiError, Exception) as err:
+            return err.response.status_code
+        return 200
 
     def live_match(self, summonerName, guild_id=None):
         """Call Riot API to receive live_match information.
@@ -129,6 +136,7 @@ class watcher:
             me = self.lol_watcher.summoner.by_name(
                 self.my_region, summonerName)
         except (ApiError, Exception) as err:
+            print(err)
             if err.response.status_code == 429:
                 print("error 429 Rate limit exceeded")
                 return "`잠시 후에 다시 시도하세요.`"
@@ -136,8 +144,11 @@ class watcher:
                 print("error 404 Data not found")
                 return "`ERROR! 등록되지 않은 소환사입니다. : "+summonerName+"`"
             elif err.response.status_code == 403:
-                print("error 403 Forbidden : Check your riot_api_key !!!")
-                return err.response.status_code
+                print("error 403 Forbidden")
+                return
+            elif err.response.status_code == 503:
+                print("ERROR 503 : Riot API Server is now offline.")
+                return
             else:
                 print(err)
                 return "`ERROR OCCURED`"
@@ -152,8 +163,11 @@ class watcher:
             elif err.response.status_code == 404:
                 return
             elif err.response.status_code == 403:
-                print("error 403 Forbidden : Check your riot_api_key !!!")
-                return err.response.status_code
+                print("error 403 Forbidden")
+                return
+            elif err.response.status_code == 503:
+                print("ERROR 503 : Riot API Server is now offline.")
+                return
             else:
                 print(err)
                 return "`ERROR OCCURED`"
@@ -172,6 +186,8 @@ class watcher:
                         self.my_region, match['gameId'])
                 except (ApiError, Exception) as err:
                     if err.response.status_code == 404:
+                        return
+                    elif err.response.status_code == 503:
                         return
                     else:
                         print(

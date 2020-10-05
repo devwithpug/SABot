@@ -23,8 +23,11 @@ class sabot:
         self.prefix = '!'
         self.wt = watcher.watcher()
         self.debug = False
-        self.lt = True
+        self.lt = {}
 
+
+'''for guild in guilds:
+            self.live_game_tracker_on[guild.id] = True'''
 
 setup = sabot()
 bot = commands.Bot(command_prefix=setup.prefix,
@@ -38,6 +41,8 @@ async def on_ready():
     print("We have logged in as {0.user}".format(bot))
     print("Guild List : {}".format(str(bot.guilds)))
     setup.wt.init_summoner_list(bot.guilds)
+    for guild in bot.guilds:
+        setup.lt[guild.id] = True
     live_game_tracker.start()
 
 
@@ -189,6 +194,10 @@ async def l(ctx, *args):
         await ctx.send(content=preview_current_game(name))
 
     elif args[0] == 'add' and len(args) > 1:
+        if setup.wt.test_riot_api(name=name) == 404:
+            print("Error Invaild SummonerName")
+            await ctx.send(embed=discord.Embed(title="등록되지 않은 소환사입니다. 오타를 확인 해주세요."))
+            return
         d = setup.wt.edit_summoner_list(str(ctx.guild.id), True, name)
         await ctx.send(embed=discord.Embed(title=d))
 
@@ -197,26 +206,33 @@ async def l(ctx, *args):
         await ctx.send(embed=discord.Embed(title=d))
 
     elif args[0] == 'start' and len(args) > 0:
-        if setup.lt is True:
+        if setup.lt[ctx.guild.id] is True:
             await ctx.send(embed=discord.Embed(title="Live-game tracker is already working."))
+            return
+        elif setup.wt.test_riot_api() == 403:
+            await ctx.send(embed=discord.Embed(title="Couldn't start Live-game tracker. Invaild Riot API key."))
             return
         setup.wt = watcher.watcher()
         setup.wt.init_summoner_list(bot.guilds)
-        setup.lt = True
-        live_game_tracker.start()
-        print("[{}] [Live_game_tracker] live_game_tracker was started. ".format(
-            time.strftime('%c', time.localtime(time.time()))))
+        setup.lt[ctx.guild.id] = True
+        print("[{}] [Live_game_tracker] {} live_game_tracker was started. ".format(
+            time.strftime('%c', time.localtime(time.time())), ctx.guild.name))
         await ctx.send(embed=discord.Embed(title="Live-game tracker was started."))
 
     elif args[0] == 'stop' and len(args) > 0:
-        if setup.lt is False:
+        if setup.lt[ctx.guild.id] is False:
             await ctx.send(embed=discord.Embed(title="Live-game tracker was already stopped."))
             return
-        setup.lt = False
-        live_game_tracker.stop()
-        print("[{}] [Live_game_tracker] live_game_tracker was stopped. ".format(
-            time.strftime('%c', time.localtime(time.time()))))
+        setup.lt[ctx.guild.id] = False
+        print("[{}] [Live_game_tracker] {} live_game_tracker was stopped. ".format(
+            time.strftime('%c', time.localtime(time.time())), ctx.guild.name))
         await ctx.send(embed=discord.Embed(title="Live-game tracker was stopped."))
+
+    elif args[0] == 'list' and len(args) > 0:
+        names = ''
+        for name in setup.wt.get_summoner_list(ctx.guild.id):
+            names += name
+        await ctx.send(embed=discord.Embed(title="Live-game tracker Users", description=names))
 
     else:
         await ctx.send(embed=discord.Embed(title="Check available commands : https://github.com/Jungyu-Choi/SABot"))
@@ -224,30 +240,30 @@ async def l(ctx, *args):
 
 @tasks.loop(seconds=60.0)
 async def live_game_tracker():
+    if setup.wt.test_riot_api() == 403:
+        print("[{}] [Live_game_tracker] error 403 Forbidden : Check your riot_api_key !!!".format(
+            time.strftime('%c', time.localtime(time.time()))))
+
+        for guild in bot.guilds:
+            await guild.system_channel.send(embed=discord.Embed(title="Riot API has expired. Live-game tracker will stopped until fixes."))
+            await guild.system_channel.send(embed=discord.Embed(title="Live-game tracker was stopped."))
+            setup.lt[guild.id] = False
+
+        print("[{}] [Live_game_tracker] live_game_tracker was stopped. ".format(
+            time.strftime('%c', time.localtime(time.time()))))
+        return
+
     for guild in bot.guilds:
-        if setup.debug:
-            print("[Live_game_tracker]guild id : ", guild.id)
-            print("[Live_game_tracker]live_game is traking... at " +
-                  time.strftime('%c', time.localtime(time.time())))
-            print("[Live_game_tracker]summoner list : ",
-                  setup.wt.get_summoner_list(str(guild.id)))
         for summonerName in setup.wt.get_summoner_list(str(guild.id)):
-            content = preview_current_game(summonerName, str(guild.id))
+            content = preview_current_game(
+                summonerName.rstrip('\n'), str(guild.id))
             if type(content) is str:
                 await guild.system_channel.send(content=content)
-            elif type(content) is int:
-                await guild.system_channel.send(embed=discord.Embed(title="Riot API has expired. Live-game tracker will stopped until fixes."))
-                await guild.system_channel.send(embed=discord.Embed(title="Live-game tracker was stopped."))
-                setup.lt = False
-                live_game_tracker.stop()
-                print("[{}] [Live_game_tracker] live_game_tracker was stopped. ".format(
-                    time.strftime('%c', time.localtime(time.time()))))
-                return
 
 
 def preview_current_game(name, guild_id=None):
     d = setup.wt.live_match(name, guild_id)
-    if type(d) is str or type(d) is int:
+    if type(d) is str:
         return d
     elif d is None:
         return
