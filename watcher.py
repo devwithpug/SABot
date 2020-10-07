@@ -139,6 +139,8 @@ class watcher:
             print(err)
             if err.response.status_code == 404 and not lt:
                 return "`ERROR! 등록되지 않은 소환사입니다. : "+summonerName+"`"
+            if err.response.status_code == 403 and not lt:
+                return "`Riot API ERROR`"
             elif err.response.status_code == 404 and lt:
                 self.edit_summoner_list(guild_id, False, summonerName)
                 return "`Live-tracker 오류 발생\n\
