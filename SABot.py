@@ -186,12 +186,12 @@ async def l(ctx, *args):
 
         await ctx.send(embed=embed)
 
-    elif args[0] == 'currentGame' and len(args) > 1:
-        content = preview_current_game(name)
+    elif args[0] == 'match' and len(args) > 1:
+        content = preview_current_game(name, lt=False)
         if content is None:
             await ctx.send(embed=discord.Embed(title="{} 님은 현재 게임중이 아닙니다.".format(name)))
             return
-        await ctx.send(content=preview_current_game(name))
+        await ctx.send(content=content)
 
     elif args[0] == 'add' and len(args) > 1:
         if setup.wt.test_riot_api(name=name) == 404:
@@ -206,14 +206,17 @@ async def l(ctx, *args):
         await ctx.send(embed=discord.Embed(title=d))
 
     elif args[0] == 'start' and len(args) > 0:
+        setup.wt = watcher.watcher()
+        setup.wt.init_summoner_list(bot.guilds)
+
         if setup.lt[ctx.guild.id] is True:
             await ctx.send(embed=discord.Embed(title="Live-game tracker is already working."))
             return
         elif setup.wt.test_riot_api() == 403:
             await ctx.send(embed=discord.Embed(title="Couldn't start Live-game tracker. Invaild Riot API key."))
             return
-        setup.wt = watcher.watcher()
-        setup.wt.init_summoner_list(bot.guilds)
+
+        live_game_tracker.restart()
         setup.lt[ctx.guild.id] = True
         print("[{}] [Live_game_tracker] {} live_game_tracker was started. ".format(
             time.strftime('%c', time.localtime(time.time())), ctx.guild.name))
@@ -249,6 +252,8 @@ async def live_game_tracker():
             await guild.system_channel.send(embed=discord.Embed(title="Live-game tracker was stopped."))
             setup.lt[guild.id] = False
 
+        live_game_tracker.stop()
+
         print("[{}] [Live_game_tracker] live_game_tracker was stopped. ".format(
             time.strftime('%c', time.localtime(time.time()))))
         return
@@ -261,8 +266,8 @@ async def live_game_tracker():
                 await guild.system_channel.send(content=content)
 
 
-def preview_current_game(name, guild_id=None):
-    d = setup.wt.live_match(name, guild_id)
+def preview_current_game(name, guild_id=None, lt=True):
+    d = setup.wt.live_match(name, guild_id, lt)
     if type(d) is str:
         return d
     elif d is None:

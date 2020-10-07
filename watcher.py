@@ -122,7 +122,7 @@ class watcher:
             return err.response.status_code
         return 200
 
-    def live_match(self, summonerName, guild_id=None):
+    def live_match(self, summonerName, guild_id=None, lt=True):
         """Call Riot API to receive live_match information.
 
         Args:
@@ -137,40 +137,25 @@ class watcher:
                 self.my_region, summonerName)
         except (ApiError, Exception) as err:
             print(err)
-            if err.response.status_code == 429:
-                print("error 429 Rate limit exceeded")
-                return "`잠시 후에 다시 시도하세요.`"
-            elif err.response.status_code == 404:
-                print("error 404 Data not found")
+            if err.response.status_code == 404 and not lt:
                 return "`ERROR! 등록되지 않은 소환사입니다. : "+summonerName+"`"
-            elif err.response.status_code == 403:
-                print("error 403 Forbidden")
-                return
-            elif err.response.status_code == 503:
-                print("ERROR 503 : Riot API Server is now offline.")
-                return
+            elif err.response.status_code == 404 and lt:
+                self.edit_summoner_list(guild_id, False, summonerName)
+                return "`Live-tracker 오류 발생\n\
+                    소환사 [{}]의 닉네임이 변경되었거나 오류가 발생했습니다.\n\
+                    [!l add 소환사명] 명령어를 이용하여 다시 등록하시기 바랍니다.`".format(summonerName)
             else:
-                print(err)
-                return "`ERROR OCCURED`"
+                return
         data = []
         try:
             match = self.lol_watcher.spectator.by_summoner(
                 self.my_region, me['id'])
         except (ApiError, Exception) as err:
-            if err.response.status_code == 429:
-                print("error 429 Rate limit exceeded")
-                return "`잠시 후에 다시 시도하세요.`"
-            elif err.response.status_code == 404:
-                return
-            elif err.response.status_code == 403:
-                print("error 403 Forbidden")
-                return
-            elif err.response.status_code == 503:
-                print("ERROR 503 : Riot API Server is now offline.")
+            if err.response.status_code == 404:
                 return
             else:
                 print(err)
-                return "`ERROR OCCURED`"
+                return
 
         match_data = {}
 
@@ -248,7 +233,6 @@ class watcher:
         for participant in data[1]:
             row = self.lol_watcher.league.by_summoner(
                 self.my_region, participant['summonerId'])
-            print(row)
             if len(row) != 0:
                 participants[i]['tier'] = row[-0]['tier']
                 participants[i]['rank'] = row[-0]['rank']

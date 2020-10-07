@@ -36,7 +36,7 @@ Live-game-tracker data file `.summoner_list` will saved in your directory with `
 
     *LOL Search-informations
         !l nick 'SummonerName'
-        !l currentGame 'summonerName'
+        !l match 'summonerName' // live match info
 
     *LOL live-game-tracker
         !l add 'SummonerName'
