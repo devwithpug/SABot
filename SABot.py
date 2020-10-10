@@ -194,10 +194,6 @@ async def l(ctx, *args):
         await ctx.send(content=content)
 
     elif args[0] == 'add' and len(args) > 1:
-        if setup.wt.test_riot_api(name=name) == 404:
-            print("Error Invaild SummonerName")
-            await ctx.send(embed=discord.Embed(title="등록되지 않은 소환사입니다. 오타를 확인 해주세요."))
-            return
         d = setup.wt.edit_summoner_list(str(ctx.guild.id), True, name)
         await ctx.send(embed=discord.Embed(title=d))
 
@@ -212,11 +208,14 @@ async def l(ctx, *args):
         if setup.lt[ctx.guild.id] is True:
             await ctx.send(embed=discord.Embed(title="Live-game tracker is already working."))
             return
-        elif setup.wt.test_riot_api() == 403:
+        elif setup.wt.riot_api_status() == 403:
             await ctx.send(embed=discord.Embed(title="Couldn't start Live-game tracker. Invaild Riot API key."))
             return
+        try:
+            live_game_tracker.start()
+        except RuntimeError:
+            live_game_tracker.restart()
 
-        live_game_tracker.restart()
         setup.lt[ctx.guild.id] = True
         print("[{}] [Live_game_tracker] {} live_game_tracker was started. ".format(
             time.strftime('%c', time.localtime(time.time())), ctx.guild.name))
@@ -243,7 +242,7 @@ async def l(ctx, *args):
 
 @tasks.loop(seconds=60.0)
 async def live_game_tracker():
-    if setup.wt.test_riot_api() == 403:
+    if setup.wt.riot_api_status() == 403:
         print("[{}] [Live_game_tracker] error 403 Forbidden : Check your riot_api_key !!!".format(
             time.strftime('%c', time.localtime(time.time()))))
 
@@ -259,15 +258,18 @@ async def live_game_tracker():
         return
 
     for guild in bot.guilds:
+        if setup.lt[guild.id] is False:
+            continue
+        setup.wt.is_match_ended(guild)
         for summonerName in setup.wt.get_summoner_list(str(guild.id)):
             content = preview_current_game(
-                summonerName.rstrip('\n'), str(guild.id))
+                summonerName.rstrip('\n'), guild)
             if type(content) is str:
                 await guild.system_channel.send(content=content)
 
 
-def preview_current_game(name, guild_id=None, lt=True):
-    d = setup.wt.live_match(name, guild_id, lt)
+def preview_current_game(name, guild=None, lt=True):
+    d = setup.wt.live_match(name, guild, lt)
     if type(d) is str:
         return d
     elif d is None:
@@ -281,8 +283,8 @@ def preview_current_game(name, guild_id=None, lt=True):
                 d[1][i]['summonerName']+" | "+d[1][i]['tier']+"\n"
         else:
             content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank'] + \
-                " | "+str(d[1][i]['avarage'])+"% | "+str(d[1][i]['wins']) + \
-                " wins | "+str(d[1][i]['losses'])+" losses \n"
+                " | "+str(d[1][i]['avarage'])+"% | "+str(d[1][i]['wins']
+                                                         ) + " wins | "+str(d[1][i]['losses'])+" losses \n"
     content += "Red Team\n"
     for i in range(5, 10):
         if d[1][i]['tier'] == 'unranked':
@@ -290,8 +292,8 @@ def preview_current_game(name, guild_id=None, lt=True):
                 d[1][i]['summonerName']+" | "+d[1][i]['tier']+"\n"
         else:
             content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank'] + \
-                " | "+str(d[1][i]['avarage'])+"% | "+str(d[1][i]['wins']) + \
-                " wins | "+str(d[1][i]['losses'])+" losses \n"
+                " | "+str(d[1][i]['avarage'])+"% | "+str(d[1][i]['wins']
+                                                         ) + " wins | "+str(d[1][i]['losses'])+" losses \n"
     content += "```"
     return content
 

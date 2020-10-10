@@ -29,6 +29,11 @@ class watcher:
         self.ended_game_id_temp = {}
 
     def init_summoner_list(self, guilds):
+        """Get summoner's name from .summoner_list
+
+        Args:
+            guilds ([Guild]): discord.Guild
+        """
         print("[Live_game_tracker]Initializing summoner_list ...")
         self.summoner_list_path = [os.path.dirname(
             os.path.abspath(__file__)) + "/.summoner_list_"+str(guild.id) for guild in guilds]
@@ -85,6 +90,13 @@ class watcher:
         Returns:
             str: Operation result
         """
+        try:
+            self.lol_watcher.summoner.by_name(self.my_region, summonerName)
+        except (ApiError, Exception) as err:
+            if err.response.status_code == 404:
+                return "등록되지 않은 소환사입니다. 오타를 확인 해주세요."
+            else:
+                return "ERROR OCCURED"
         if add:
             if summonerName in self.summoner_list_temp[guild_id]:
                 return "이미 등록된 소환사 입니다."
@@ -115,19 +127,40 @@ class watcher:
                   time.strftime('%c', time.localtime(time.time())))
             return "삭제 성공"
 
-    def test_riot_api(self, name='hide on bush'):
+    def riot_api_status(self):
         try:
-            self.lol_watcher.summoner.by_name(self.my_region, name)
+            self.lol_watcher.lol_status.shard_data(self.my_region)
         except (ApiError, Exception) as err:
             return err.response.status_code
         return 200
 
-    def live_match(self, summonerName, guild_id=None, lt=True):
+    def is_match_ended(self, guild):
+        """Check the live_game was ended
+
+        Args:
+            guild (Guild()): discord.Guild
+        """
+        try:
+            self.live_game_id[guild.id]
+        except KeyError:
+            return
+
+        matches = self.live_game_id[guild.id]
+        for game in matches:
+            try:
+                self.lol_watcher.match.by_id(self.my_region, game)
+            except (ApiError, Exception):
+                continue
+            self.live_game_id[guild.id].remove(game)
+            print("[{}][Live_game_tracker][{}] Live game ended : {}".format(
+                time.strftime('%c', time.localtime(time.time())), guild.name, game))
+
+    def live_match(self, summonerName, guild=None, lt=True):
         """Call Riot API to receive live_match information.
 
         Args:
             summonerName (str): Summoner's name
-            guild_id (str): discord.Guild.id
+            guild (Guild()): discord.Guild
 
         Returns:
             dict: live_match data
@@ -142,7 +175,7 @@ class watcher:
             if err.response.status_code == 403 and not lt:
                 return "`Riot API ERROR`"
             elif err.response.status_code == 404 and lt:
-                self.edit_summoner_list(guild_id, False, summonerName)
+                self.edit_summoner_list(str(guild.id), False, summonerName)
                 return "`Live-tracker 오류 발생\n\
                     소환사 [{}]의 닉네임이 변경되었거나 오류가 발생했습니다.\n\
                     [!l add 소환사명] 명령어를 이용하여 다시 등록하시기 바랍니다.`".format(summonerName)
@@ -161,44 +194,44 @@ class watcher:
 
         match_data = {}
 
-        if guild_id is not None:
+        if guild is not None:
             try:
-                self.live_game_id[guild_id]
+                self.live_game_id[guild.id]
             except KeyError:
-                self.live_game_id[guild_id] = []
-                self.ended_game_id_temp[guild_id] = None
-            if match['gameId'] in self.live_game_id[guild_id]:
+                self.live_game_id[guild.id] = []
+                self.ended_game_id_temp[guild.id] = None
+            if match['gameId'] in self.live_game_id[guild.id]:
                 try:
                     self.lol_watcher.match.by_id(
                         self.my_region, match['gameId'])
                 except (ApiError, Exception) as err:
-                    if err.response.status_code == 404:
-                        return
-                    elif err.response.status_code == 503:
+                    if err.response.status_code == 404 or\
+                            err.response.status_code == 403 or\
+                            err.response.status_code == 503 or\
+                            err.response.status_code == 504:
                         return
                     else:
                         print(
-                            "Error occured at live_game_tracker. All of live_game_id data has been deleted.")
+                            "[{}]Error occured at live_game_tracker. All of live_game_id data has been deleted.".format(time.strftime('%c', time.localtime(time.time()))))
                         print(err)
-                        self.live_game_id[guild_id].clear()
-                        self.ended_game_id_temp[guild_id] = None
+                        self.live_game_id[guild.id].clear()
+                        self.ended_game_id_temp[guild.id] = None
                         return
-                print("[{}] [Live_game_tracker] Live game ended : {}".format(
-                    time.strftime('%c', time.localtime(time.time())), match['gameId']))
-                self.ended_game_id_temp[guild_id] = match['gameId']
-                self.live_game_id[guild_id].remove(match['gameId'])
+                print("[{}][Live_game_tracker][{}] Live game ended : {}".format(
+                    time.strftime('%c', time.localtime(time.time())), guild.name, match['gameId']))
+                self.ended_game_id_temp[guild.id] = match['gameId']
+                self.live_game_id[guild.id].remove(match['gameId'])
                 return
-
             else:
-                if match['gameId'] == self.ended_game_id_temp[guild_id]:
+                if match['gameId'] == self.ended_game_id_temp[guild.id]:
                     return
 
-                self.live_game_id[guild_id].append(match['gameId'])
+                self.live_game_id[guild.id].append(match['gameId'])
 
-                print("[{}] [Live_game_tracker] New live game added : {}".format(
-                    time.strftime('%c', time.localtime(time.time())), match['gameId']))
-                print("[Live_game_tracker]Current tracking live_game_id list : " +
-                      str(self.live_game_id[guild_id]))
+                print("[{}][Live_game_tracker][{}] New live game added : {}".format(
+                    time.strftime('%c', time.localtime(time.time())), guild.name, match['gameId']))
+                print("[{}][Live_game_tracker][{}]Current tracking live_game_id list : {}".format(
+                    time.strftime('%c', time.localtime(time.time())), guild.name, str(self.live_game_id[guild.id])))
 
         match_data['gameId'] = match['gameId']
         match_data['gameType'] = match['gameType']
@@ -235,14 +268,22 @@ class watcher:
         for participant in data[1]:
             row = self.lol_watcher.league.by_summoner(
                 self.my_region, participant['summonerId'])
+
             if len(row) != 0:
-                participants[i]['tier'] = row[-0]['tier']
-                participants[i]['rank'] = row[-0]['rank']
-                participants[i]['leaguePoints'] = row[-0]['leaguePoints']
-                participants[i]['wins'] = row[-0]['wins']
-                participants[i]['losses'] = row[-0]['losses']
+                ranked_solo_index = 0
+                for league in row:
+                    if league['queueType'] == "RANKED_SOLO_5x5":
+                        break
+                    else:
+                        ranked_solo_index += 1
+
+                participants[i]['tier'] = row[ranked_solo_index]['tier']
+                participants[i]['rank'] = row[ranked_solo_index]['rank']
+                participants[i]['leaguePoints'] = row[ranked_solo_index]['leaguePoints']
+                participants[i]['wins'] = row[ranked_solo_index]['wins']
+                participants[i]['losses'] = row[ranked_solo_index]['losses']
                 participants[i]['avarage'] = round(
-                    row[-0]['wins']/(row[-0]['wins']+row[-0]['losses'])*100, 2)
+                    row[ranked_solo_index]['wins']/(row[ranked_solo_index]['wins']+row[ranked_solo_index]['losses'])*100, 2)
             else:
                 participants[i]['tier'] = "unranked"
 
