@@ -28,6 +28,14 @@ class watcher:
         self.live_game_id = {}
         self.ended_game_id_temp = {}
 
+    def init_riot_api(self):
+        token_path = os.path.dirname(
+            os.path.abspath(__file__)) + "/.riot_api_key"
+        with open(token_path, "r", encoding="utf-8") as t:
+            self.riot_api_key = t.read().split()[0]
+        print("Init riot_api_key : ", self.riot_api_key)
+        self.lol_watcher = LolWatcher(self.riot_api_key)
+
     def init_summoner_list(self, guilds):
         """Get summoner's name from .summoner_list
 
@@ -276,7 +284,12 @@ class watcher:
                         break
                     else:
                         ranked_solo_index += 1
-
+                try:
+                    row[ranked_solo_index]
+                except IndexError:
+                    participants[i]['tier'] = "unranked"
+                    i += 1
+                    continue
                 participants[i]['tier'] = row[ranked_solo_index]['tier']
                 participants[i]['rank'] = row[ranked_solo_index]['rank']
                 participants[i]['leaguePoints'] = row[ranked_solo_index]['leaguePoints']
@@ -284,9 +297,6 @@ class watcher:
                 participants[i]['losses'] = row[ranked_solo_index]['losses']
                 participants[i]['avarage'] = round(
                     row[ranked_solo_index]['wins']/(row[ranked_solo_index]['wins']+row[ranked_solo_index]['losses'])*100, 2)
-            else:
-                participants[i]['tier'] = "unranked"
-
             i += 1
 
         df = pd.DataFrame(participants)

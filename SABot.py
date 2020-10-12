@@ -202,8 +202,7 @@ async def l(ctx, *args):
         await ctx.send(embed=discord.Embed(title=d))
 
     elif args[0] == 'start' and len(args) > 0:
-        setup.wt = watcher.watcher()
-        setup.wt.init_summoner_list(bot.guilds)
+        setup.wt.init_riot_api()
 
         if setup.lt[ctx.guild.id] is True:
             await ctx.send(embed=discord.Embed(title="Live-game tracker is already working."))
