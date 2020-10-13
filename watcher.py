@@ -287,7 +287,7 @@ class watcher:
                 try:
                     row[ranked_solo_index]
                 except IndexError:
-                    participants[i]['tier'] = "unranked"
+                    participants[i]['tier'] = 'unranked'
                     i += 1
                     continue
                 participants[i]['tier'] = row[ranked_solo_index]['tier']
@@ -297,6 +297,8 @@ class watcher:
                 participants[i]['losses'] = row[ranked_solo_index]['losses']
                 participants[i]['avarage'] = round(
                     row[ranked_solo_index]['wins']/(row[ranked_solo_index]['wins']+row[ranked_solo_index]['losses'])*100, 2)
+            else:
+                participants[i]['tier'] = 'unranked'
             i += 1
 
         df = pd.DataFrame(participants)
