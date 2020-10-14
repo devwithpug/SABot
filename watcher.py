@@ -26,7 +26,6 @@ class watcher:
         self.queues = requests.get(
             'http://static.developer.riotgames.com/docs/lol/queues.json').json()
         self.live_game_id = {}
-        self.ended_game_id_temp = {}
 
     def init_riot_api(self):
         token_path = os.path.dirname(
@@ -160,7 +159,7 @@ class watcher:
             except (ApiError, Exception):
                 continue
             self.live_game_id[guild.id].remove(game)
-            print("[{}][Live_game_tracker][{}] Live game ended : {}".format(
+            print("[{}][Live_game_tracker][{}]Live game ended : {}".format(
                 time.strftime('%c', time.localtime(time.time())), guild.name, game))
 
     def live_match(self, summonerName, guild=None, lt=True):
@@ -207,7 +206,6 @@ class watcher:
                 self.live_game_id[guild.id]
             except KeyError:
                 self.live_game_id[guild.id] = []
-                self.ended_game_id_temp[guild.id] = None
             if match['gameId'] in self.live_game_id[guild.id]:
                 try:
                     self.lol_watcher.match.by_id(
@@ -223,20 +221,25 @@ class watcher:
                             "[{}]Error occured at live_game_tracker. All of live_game_id data has been deleted.".format(time.strftime('%c', time.localtime(time.time()))))
                         print(err)
                         self.live_game_id[guild.id].clear()
-                        self.ended_game_id_temp[guild.id] = None
                         return
-                print("[{}][Live_game_tracker][{}] Live game ended : {}".format(
+                print("[{}][Live_game_tracker][{}]Live game ended : {}".format(
                     time.strftime('%c', time.localtime(time.time())), guild.name, match['gameId']))
-                self.ended_game_id_temp[guild.id] = match['gameId']
                 self.live_game_id[guild.id].remove(match['gameId'])
                 return
             else:
-                if match['gameId'] == self.ended_game_id_temp[guild.id]:
+                try:
+                    self.lol_watcher.match.by_id(
+                        self.my_region, match['gameId'])
+                except (ApiError, Exception):
+                    pass
+                else:
+                    print("[{}][Live_game_tracker][{}]Duplicated match found : {}".format(
+                        time.strftime('%c', time.localtime(time.time())), guild.name, match['gameId']))
                     return
 
                 self.live_game_id[guild.id].append(match['gameId'])
 
-                print("[{}][Live_game_tracker][{}] New live game added : {}".format(
+                print("[{}][Live_game_tracker][{}]New live game added : {}".format(
                     time.strftime('%c', time.localtime(time.time())), guild.name, match['gameId']))
                 print("[{}][Live_game_tracker][{}]Current tracking live_game_id list : {}".format(
                     time.strftime('%c', time.localtime(time.time())), guild.name, str(self.live_game_id[guild.id])))

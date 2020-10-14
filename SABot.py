@@ -26,9 +26,6 @@ class sabot:
         self.lt = {}
 
 
-'''for guild in guilds:
-            self.live_game_tracker_on[guild.id] = True'''
-
 setup = sabot()
 bot = commands.Bot(command_prefix=setup.prefix,
                    status=discord.Status.online, activity=setup.game)
