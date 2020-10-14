@@ -48,6 +48,7 @@ async def on_guild_join(guild):
     print("SAbot joined at {} ({})".format(guild.name, guild.id))
     await guild.system_channel.send(embed=discord.Embed(title="SABot is now ONLINE =D"))
     setup.wt.init_summoner_list(bot.guilds)
+    setup.lt[guild.id] = True
     print("[Live_game_tracker]Restart live_game_tracker")
     live_game_tracker.restart()
 
@@ -60,6 +61,7 @@ async def on_guild_remove(guild):
     os.remove(path)
     print("{} was removed.".format(path))
     setup.wt.init_summoner_list(bot.guilds)
+    setup.lt[guild.id].remove()
     print("[Live_game_tracker]Restart live_game_tracker")
     live_game_tracker.restart()
 

@@ -6,6 +6,9 @@ And you just need to use the commands below.
 
 
 [[KR SERVER ONLY]Invite SABot to your Discord Server](https://discord.com/api/oauth2/authorize?client_id=749632311208706073&permissions=2048&scope=bot)
+개발중이라 정상적으로 작동하지 않을 수 있습니다..
+혹시나 이용중 오류가 발생하시거나, 의견이 있으시면 
+디스코드 `퍼그#8744` 통해서 메세지 보내주세요. 감사합니다!
 
 ## How to set up:
 
