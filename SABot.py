@@ -61,7 +61,7 @@ async def on_guild_remove(guild):
     os.remove(path)
     print("{} was removed.".format(path))
     setup.wt.init_summoner_list(bot.guilds)
-    setup.lt[guild.id].remove()
+    del setup.lt[guild.id]
     print("[Live_game_tracker]Restart live_game_tracker")
     live_game_tracker.restart()
 
