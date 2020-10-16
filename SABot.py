@@ -46,7 +46,13 @@ async def on_ready():
 @bot.event
 async def on_guild_join(guild):
     print("SAbot joined at {} ({})".format(guild.name, guild.id))
-    await guild.system_channel.send(embed=discord.Embed(title="SABot is now ONLINE =D"))
+    try:
+        await guild.system_channel.send(embed=discord.Embed(title="SABot is now ONLINE =D"))
+    except discord.errors.Forbidden:
+        print("SABot Unable to obtain permissions for send message in channel '{}'".format(
+            guild.name))
+        await guild.leave()
+        return
     setup.wt.init_summoner_list(bot.guilds)
     setup.lt[guild.id] = True
     print("[Live_game_tracker]Restart live_game_tracker")
