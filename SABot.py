@@ -141,7 +141,8 @@ async def alarm(ctx):
 
 @bot.command()
 async def debug_leave_all_guilds(ctx):
-    if ctx.author.name == '퍼그#8744':
+    if ctx.author == '퍼그#8744':
+        print("debug_leave_all_guilds")
         for guild in bot.guilds:
             guild.leave()
 
