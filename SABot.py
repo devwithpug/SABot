@@ -62,8 +62,7 @@ async def on_guild_join(guild):
 @bot.event
 async def on_guild_remove(guild):
     print("SAbot removed at {} ({})".format(guild.name, guild.id))
-    path = os.path.dirname(os.path.abspath(__file__)) + \
-        "/.summoner_list_" + str(guild.id)
+    path = "./data/.summoner_list_" + str(guild.id)
     os.remove(path)
     print("{} was removed.".format(path))
     setup.wt.init_summoner_list(bot.guilds)
@@ -141,10 +140,9 @@ async def alarm(ctx):
 
 @bot.command()
 async def debug_leave_all_guilds(ctx):
-    if ctx.author == '퍼그#8744':
-        print("debug_leave_all_guilds")
+    if ctx.author.id == 279204767472025600:
         for guild in bot.guilds:
-            guild.leave()
+            await guild.leave()
 
 
 @bot.command()
