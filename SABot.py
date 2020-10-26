@@ -74,7 +74,7 @@ async def on_guild_remove(guild):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if before.channel is None and after.channel is not None and after.channel is not member.guild.afk_channel:
+    if before.channel is None and after.channel is not None and after.channel is not member.guild.afk_channel and not member.bot:
         if member.nick is not None:
             embed = discord.Embed(title=member.nick + " 님이 " +
                                   after.channel.name + " 보이스 채널에 접속했습니다.")
@@ -82,7 +82,7 @@ async def on_voice_state_update(member, before, after):
             embed = discord.Embed(title=member.name + " 님이 " +
                                   after.channel.name + " 보이스 채널에 접속했습니다.")
         await member.guild.system_channel.send(embed=embed)
-    if after.channel is member.guild.afk_channel:
+    if after.channel is member.guild.afk_channel and not member.bot:
         if member.nick is not None:
             embed = discord.Embed(title=member.nick +
                                   " 님이 개인적인 시간을 보내러 갔어요. ㅎㅎ;")
@@ -167,9 +167,55 @@ async def users(ctx):
 async def l(ctx, *args):
     print("[{}, {}] {} : {}".format(time.strftime('%c', time.localtime(
         time.time())), ctx.guild.name, ctx.author, ctx.message.content))
-
     if not args:
         await ctx.send(embed=discord.Embed(title="Check available commands : https://github.com/Jungyu-Choi/SABot"))
+        return
+
+    if args[0] == 'setup' and len(args) > 0:
+
+        def check_confirm(m):
+            return m.content == 'y' or m.content == 'n' and m.channel == ctx.channel
+
+        def select_region(m):
+            return m.content == 'br1' or m.content == 'eun1' or m.content == 'euw1' or m.content == 'jp1' or m.content == 'kr' or m.content == 'la1' or m.content == 'la2' or m.content == 'la2' or m.content == 'na1' or m.content == 'oc1' or m.content == 'tr1' or m.content == 'ru' and m.channel == ctx.channel
+
+        if setup.wt.is_setup_already(ctx.guild):
+            await ctx.send(embed=discord.Embed(title="Your discord server was already setup. Would you like to reset it?", description="'y' : Yes 'n' : No").set_author(name="Live tracker Setup"))
+            try:
+                confirm = await bot.wait_for('message', timeout=30.0, check=check_confirm)
+            except asyncio.TimeoutError:
+                await ctx.send(embed=discord.Embed(title="Timeout : Try again."))
+                return
+            if confirm.content == 'n':
+                return
+        await ctx.send(embed=discord.Embed(title="Choose your League Of Legends region", description="'br1', 'eun1', 'euw1', 'jp1', 'kr', 'la1', 'la2', 'na1', 'oc1', 'tr1', 'ru'").set_author(name="Live tracker Setup"))
+        try:
+            region = await bot.wait_for('message', timeout=30.0, check=select_region)
+        except asyncio.TimeoutError:
+            await ctx.send(embed=discord.Embed(title="Timeout : Try again."))
+            return
+        await ctx.send(embed=discord.Embed(title="Confirm this setup?", description="region : "+region.content+"\n'y' : Yes 'n' : No").set_author(name="Live tracker Setup"))
+        try:
+            confirm = await bot.wait_for('message', timeout=30.0, check=check_confirm)
+        except asyncio.TimeoutError:
+            await ctx.send(embed=discord.Embed(title="Timeout : Try again."))
+            return
+        if confirm.content == 'n':
+            return
+
+        setup.wt.setup(region.content, ctx.guild)
+        setup.wt.init_summoner_list(bot.guilds)
+        setup.lt[ctx.guild.id] = True
+        try:
+            live_game_tracker.start()
+        except RuntimeError:
+            live_game_tracker.restart()
+
+        await ctx.send(embed=discord.Embed(title="Live tracker was setup successfully."))
+        return
+
+    if not setup.wt.is_setup_already(ctx.guild):
+        await ctx.send(embed=discord.Embed(title="'!l setup'").set_author(name="You have to setup SABot first!"))
         return
 
     name = " ".join(args[1:])
@@ -192,7 +238,7 @@ async def l(ctx, *args):
         await ctx.send(embed=embed)
 
     elif args[0] == 'match' and len(args) > 1:
-        content = preview_current_game(name, lt=False)
+        content = preview_current_game(name, ctx.guild, lt=False)
         if content is None:
             await ctx.send(embed=discord.Embed(title="{} 님은 현재 게임중이 아닙니다.".format(name)))
             return
@@ -206,7 +252,7 @@ async def l(ctx, *args):
         d = setup.wt.edit_summoner_list(str(ctx.guild.id), False, name)
         await ctx.send(embed=discord.Embed(title=d))
 
-    elif args[0] == 'start' and len(args) > 0:
+    elif args[0] == 'start' and len(args) == 1:
         setup.wt.init_riot_api()
 
         if setup.lt[ctx.guild.id] is True:
@@ -225,7 +271,7 @@ async def l(ctx, *args):
             time.strftime('%c', time.localtime(time.time())), ctx.guild.name))
         await ctx.send(embed=discord.Embed(title="Live-game tracker was started."))
 
-    elif args[0] == 'stop' and len(args) > 0:
+    elif args[0] == 'stop' and len(args) == 1:
         if setup.lt[ctx.guild.id] is False:
             await ctx.send(embed=discord.Embed(title="Live-game tracker was already stopped."))
             return
@@ -234,11 +280,12 @@ async def l(ctx, *args):
             time.strftime('%c', time.localtime(time.time())), ctx.guild.name))
         await ctx.send(embed=discord.Embed(title="Live-game tracker was stopped."))
 
-    elif args[0] == 'list' and len(args) > 0:
+    elif args[0] == 'list' and len(args) == 1:
+        region = setup.wt.guild_region[str(ctx.guild.id)]
         names = ''
         for name in setup.wt.get_summoner_list(ctx.guild.id):
             names += name
-        await ctx.send(embed=discord.Embed(title="Live-game tracker Users", description=names))
+        await ctx.send(embed=discord.Embed(title="Region : "+region, description=names).set_author(name="Live tracker user list"))
 
     else:
         await ctx.send(embed=discord.Embed(title="Check available commands : https://github.com/Jungyu-Choi/SABot"))
@@ -272,7 +319,7 @@ async def live_game_tracker():
                 await guild.system_channel.send(content=content)
 
 
-def preview_current_game(name, guild=None, lt=True):
+def preview_current_game(name, guild, lt=True):
     d = setup.wt.live_match(name, guild, lt)
     if type(d) is str:
         return d

@@ -7,33 +7,42 @@ import requests
 
 class watcher:
     def __init__(self):
+
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
         # Get riot_api_key
-        token_path = os.path.dirname(
-            os.path.abspath(__file__)) + "/.riot_api_key"
-        with open(token_path, "r", encoding="utf-8") as t:
-            self.riot_api_key = t.read().split()[0]
+        with open(".riot_api_key", "r", encoding="utf-8") as t:
+            self.riot_api_key = t.readline()
         print("riot_api_key : ", self.riot_api_key)
 
-        self.my_region = 'kr'
-
+        self.guild_region = {}
+        self.locale_dict = {'br1': 'pt_BR', 'eun1': 'en_GB', 'euw1': 'en_GB', 'jp1': 'ja_JP', 'kr': 'ko_KR',
+                            'la1': 'es_MX', 'la2': 'es_AR', 'na1': 'en_US', 'oc1': 'en_AU', 'tr1': 'tr_TR', 'ru': 'ru_RU'}
         self.lol_watcher = LolWatcher(self.riot_api_key)
 
-        latest = self.lol_watcher.data_dragon.versions_for_region(
-            self.my_region)
-        champ_version = latest['n']['champion']
-        self.static_champ_list = self.lol_watcher.data_dragon.champions(
-            champ_version, False, 'ko_KR')
         self.queues = requests.get(
             'http://static.developer.riotgames.com/docs/lol/queues.json').json()
         self.live_game_id = {}
 
     def init_riot_api(self):
-        token_path = os.path.dirname(
-            os.path.abspath(__file__)) + "/.riot_api_key"
-        with open(token_path, "r", encoding="utf-8") as t:
+        with open(".riot_api_key", "r", encoding="utf-8") as t:
             self.riot_api_key = t.read().split()[0]
         print("Init riot_api_key : ", self.riot_api_key)
         self.lol_watcher = LolWatcher(self.riot_api_key)
+
+    def is_setup_already(self, guild):
+        return os.path.getsize("./data/.summoner_list_"+str(guild.id)) > 0
+
+    def setup(self, region, guild):
+        if os.path.isfile("./data/.summoner_list_"+str(guild.id)):
+            os.remove("./data/.summoner_list_"+str(guild.id))
+        with open("./data/.summoner_list_"+str(guild.id), "w", encoding="utf8") as f:
+            f.write(region+'\n')
+
+    def get_path(self, paths, guild_id):
+        for path in paths:
+            if guild_id in path:
+                return path
 
     def init_summoner_list(self, guilds):
         """Get summoner's name from .summoner_list
@@ -42,8 +51,12 @@ class watcher:
             guilds ([Guild]): discord.Guild
         """
         print("[Live_game_tracker]Initializing summoner_list ...")
-        self.summoner_list_path = [os.path.dirname(
-            os.path.abspath(__file__)) + "/.summoner_list_"+str(guild.id) for guild in guilds]
+
+        if not os.path.isdir("data"):
+            os.mkdir("data")
+
+        self.summoner_list_path = [
+            "./data/.summoner_list_" + str(guild.id) for guild in guilds]
         self.summoner_list = {}
         self.summoner_list_temp = {}
         for path in self.summoner_list_path:
@@ -55,22 +68,19 @@ class watcher:
                 print(
                     "Your own summoner_list not found. new file created at {}".format(path))
                 f = open(path, "r", encoding="utf-8")
-            self.set_summoner_list(f, path[path.find('list_')+5:])
+            self.load_summoner_list(f, path[path.find('list_')+5:])
             f.close()
         print("[Live_game_tracker]Done")
 
-    def get_path(self, paths, guild_id):
-        for path in paths:
-            if guild_id in path:
-                return path
-
-    def set_summoner_list(self, file, guild_id):
-        """Create list variable for summoner list
+    def load_summoner_list(self, file, guild_id):
+        """Create list variable for summoner list and guilds region
 
         Args:
             file (os.IO File): .summoner_list file
             guild_id (str): discord.Guild.id
         """
+        temp_region = file.readline()
+        self.guild_region[guild_id] = temp_region.rstrip()
         self.summoner_list[guild_id] = file.readlines()
         self.summoner_list_temp[guild_id] = [
             name.rstrip() for name in self.summoner_list[guild_id]]
@@ -98,7 +108,8 @@ class watcher:
             str: Operation result
         """
         try:
-            self.lol_watcher.summoner.by_name(self.my_region, summonerName)
+            self.lol_watcher.summoner.by_name(
+                self.guild_region[guild_id], summonerName)
         except (ApiError, Exception) as err:
             if err.response.status_code == 404:
                 return "등록되지 않은 소환사입니다. 오타를 확인 해주세요."
@@ -116,6 +127,7 @@ class watcher:
                 self.summoner_list_temp[guild_id] = [name.rstrip()
                                                      for name in self.summoner_list[guild_id]]
                 with open(self.get_path(self.summoner_list_path, guild_id), "w", encoding="utf-8") as f:
+                    f.write(self.guild_region[guild_id]+'\n')
                     f.writelines(self.summoner_list[guild_id])
                 print(summonerName+" Added at " +
                       time.strftime('%c', time.localtime(time.time())))
@@ -129,6 +141,7 @@ class watcher:
             self.summoner_list_temp[guild_id] = [name.rstrip()
                                                  for name in self.summoner_list[guild_id]]
             with open(self.get_path(self.summoner_list_path, guild_id), "w", encoding="utf-8") as f:
+                f.write(self.guild_region[guild_id]+'\n')
                 f.writelines(self.summoner_list[guild_id])
             print(summonerName+" Removed at " +
                   time.strftime('%c', time.localtime(time.time())))
@@ -136,7 +149,7 @@ class watcher:
 
     def riot_api_status(self):
         try:
-            self.lol_watcher.lol_status.shard_data(self.my_region)
+            self.lol_watcher.lol_status.shard_data('kr')
         except (ApiError, Exception) as err:
             return err.response.status_code
         return 200
@@ -155,14 +168,15 @@ class watcher:
         matches = self.live_game_id[guild.id]
         for game in matches:
             try:
-                self.lol_watcher.match.by_id(self.my_region, game)
+                self.lol_watcher.match.by_id(
+                    self.guild_region[str(guild.id)], game)
             except (ApiError, Exception):
                 continue
             self.live_game_id[guild.id].remove(game)
             print("[{}][Live_game_tracker][{}]Live game ended : {}".format(
                 time.strftime('%c', time.localtime(time.time())), guild.name, game))
 
-    def live_match(self, summonerName, guild=None, lt=True):
+    def live_match(self, summonerName, guild, lt=True):
         """Call Riot API to receive live_match information.
 
         Args:
@@ -174,7 +188,7 @@ class watcher:
         """
         try:
             me = self.lol_watcher.summoner.by_name(
-                self.my_region, summonerName)
+                self.guild_region[str(guild.id)], summonerName)
         except (ApiError, Exception) as err:
             print(err)
             if err.response.status_code == 404 and not lt:
@@ -191,7 +205,7 @@ class watcher:
         data = []
         try:
             match = self.lol_watcher.spectator.by_summoner(
-                self.my_region, me['id'])
+                self.guild_region[str(guild.id)], me['id'])
         except (ApiError, Exception) as err:
             if err.response.status_code == 404:
                 return
@@ -201,7 +215,7 @@ class watcher:
 
         match_data = {}
 
-        if guild is not None:
+        if lt:
             try:
                 self.live_game_id[guild.id]
             except KeyError:
@@ -209,7 +223,7 @@ class watcher:
             if match['gameId'] in self.live_game_id[guild.id]:
                 try:
                     self.lol_watcher.match.by_id(
-                        self.my_region, match['gameId'])
+                        self.guild_region[str(guild.id)], match['gameId'])
                 except (ApiError, Exception) as err:
                     if err.response.status_code == 404 or\
                             err.response.status_code == 403 or\
@@ -229,12 +243,13 @@ class watcher:
             else:
                 try:
                     self.lol_watcher.match.by_id(
-                        self.my_region, match['gameId'])
-                except (ApiError, Exception):
-                    pass
+                        self.guild_region[str(guild.id)], match['gameId'])
+                except (ApiError, Exception) as err:
+                    if err.response.status_code == 404:
+                        pass
+                    else:
+                        return
                 else:
-                    print("[{}][Live_game_tracker][{}]Duplicated match found : {}".format(
-                        time.strftime('%c', time.localtime(time.time())), guild.name, match['gameId']))
                     return
 
                 self.live_game_id[guild.id].append(match['gameId'])
@@ -243,6 +258,12 @@ class watcher:
                     time.strftime('%c', time.localtime(time.time())), guild.name, match['gameId']))
                 print("[{}][Live_game_tracker][{}]Current tracking live_game_id list : {}".format(
                     time.strftime('%c', time.localtime(time.time())), guild.name, str(self.live_game_id[guild.id])))
+
+        latest = self.lol_watcher.data_dragon.versions_for_region(
+            self.guild_region[str(guild.id)])
+        champ_version = latest['n']['champion']
+        static_champ_list = self.lol_watcher.data_dragon.champions(
+            champ_version, False, self.locale_dict[self.guild_region[str(guild.id)]])
 
         match_data['gameId'] = match['gameId']
         match_data['gameType'] = match['gameType']
@@ -269,8 +290,8 @@ class watcher:
             participants_row['summonerId'] = row['summonerId']
             participants.append(participants_row)
         champ_dict = {}
-        for champ in self.static_champ_list['data']:
-            row = self.static_champ_list['data'][champ]
+        for champ in static_champ_list['data']:
+            row = static_champ_list['data'][champ]
             champ_dict[row['key']] = row['name']
         for row in participants:
             row['championId'] = champ_dict[str(row['championId'])]
@@ -278,7 +299,7 @@ class watcher:
         i = 0
         for participant in data[1]:
             row = self.lol_watcher.league.by_summoner(
-                self.my_region, participant['summonerId'])
+                self.guild_region[str(guild.id)], participant['summonerId'])
 
             if len(row) != 0:
                 ranked_solo_index = 0
