@@ -12,7 +12,7 @@ class watcher:
 
         # Get riot_api_key
         with open(".riot_api_key", "r", encoding="utf-8") as t:
-            self.riot_api_key = t.readline()
+            self.riot_api_key = t.read().split()[0]
         print("riot_api_key : ", self.riot_api_key)
 
         self.guild_region = {}
