@@ -140,6 +140,13 @@ async def alarm(ctx):
 
 
 @bot.command()
+async def debug_leave_all_guilds(ctx):
+    if ctx.user.name == '퍼그#8744':
+        for guild in bot.guilds:
+            guild.leave()
+
+
+@bot.command()
 async def command(ctx):
     print("[{}, {}] {} : {}".format(time.strftime('%c', time.localtime(
         time.time())), ctx.guild.name, ctx.author, ctx.message.content))

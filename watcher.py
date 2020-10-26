@@ -151,6 +151,7 @@ class watcher:
         try:
             self.lol_watcher.lol_status.shard_data('kr')
         except (ApiError, Exception) as err:
+            print(err)
             try:
                 return err.response.status_code
             except AttributeError as err:
