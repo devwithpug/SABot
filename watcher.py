@@ -151,7 +151,11 @@ class watcher:
         try:
             self.lol_watcher.lol_status.shard_data('kr')
         except (ApiError, Exception) as err:
-            return err.response.status_code
+            try:
+                return err.response.status_code
+            except AttributeError as err:
+                print(err)
+                return False
         return 200
 
     def is_match_ended(self, guild):
