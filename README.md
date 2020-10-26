@@ -8,7 +8,7 @@ SABot Permission that must be provided : `Send Messages, Embed Links`
 
 [Invite SABot to your Discord Server](https://discord.com/api/oauth2/authorize?client_id=749632311208706073&permissions=2048&scope=bot)
 
-####To use live tracker features, You need to Setup live tracker with your league of legends region. Invite SABot to your discord server and just type `!l setup`
+#### To use live tracker features, You need to Setup live tracker with your league of legends region. Invite SABot to your discord server and just type `!l setup`
 
 개발중이라 정상적으로 작동하지 않을 수 있습니다..
 혹시나 이용중 오류가 발생하시거나, 의견이 있으시면 
