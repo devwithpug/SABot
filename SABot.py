@@ -45,23 +45,24 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    print("SAbot joined at {} ({})".format(guild.name, guild.id))
+    print("[{}]SAbot joined at {} ({})".format(time.strftime('%c', time.localtime(
+        time.time())), guild.name, guild.id))
+    setup.wt.init_summoner_list(bot.guilds)
+    setup.lt[guild.id] = True
     try:
         await guild.system_channel.send(embed=discord.Embed(title="SABot is now ONLINE =D"))
     except discord.errors.Forbidden:
-        print("SABot Unable to obtain permissions for send message in channel '{}'".format(
-            guild.name))
+        print("(error code: 50013): Missing Permissions")
         await guild.leave()
         return
-    setup.wt.init_summoner_list(bot.guilds)
-    setup.lt[guild.id] = True
     print("[Live_game_tracker]Restart live_game_tracker")
     live_game_tracker.restart()
 
 
 @bot.event
 async def on_guild_remove(guild):
-    print("SAbot removed at {} ({})".format(guild.name, guild.id))
+    print("[{}]SAbot removed at {} ({})".format(time.strftime('%c', time.localtime(
+        time.time())), guild.name, guild.id))
     path = "./data/.summoner_list_" + str(guild.id)
     os.remove(path)
     print("{} was removed.".format(path))

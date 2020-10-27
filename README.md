@@ -4,11 +4,14 @@
 Inviting `SABot` to your Discord Channel, you don't need to set up a `SABot` files.
 And you just need to use the commands below.
 
-SABot Permission that must be provided : `Send Messages, Embed Links`
+##### SABot Permission that must be provided : `Send Messages, Embed Links`
 
 [Invite SABot to your Discord Server](https://discord.com/api/oauth2/authorize?client_id=749632311208706073&permissions=2048&scope=bot)
 
-#### To use live tracker features, You need to Setup live tracker with your league of legends region. Invite SABot to your discord server and just type `!l setup`
+##### To use live tracker features, You need to Setup live tracker with your league of legends region. Invite SABot to your discord server and just type `!l setup`
+
+##### If SABot leaves the channel as soon as you invite, Because of your Text Channel Permission issue. Check your channel Permissions.
+<img width="800" alt="스크린샷 2020-10-27 오후 5 21 33" src="https://user-images.githubusercontent.com/69145799/97276009-feceb080-1879-11eb-959f-595aed84aae5.png">
 
 개발중이라 정상적으로 작동하지 않을 수 있습니다..
 혹시나 이용중 오류가 발생하시거나, 의견이 있으시면 
