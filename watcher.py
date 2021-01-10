@@ -356,7 +356,7 @@ class watcher:
         # background
         lineX = 1850
         lineY = 100
-        font = ImageFont.truetype('Arial.ttf', 50)
+        font = ImageFont.truetype('NanumGothic.ttf', 50)
 
         im = Image.new('RGBA', (lineX, lineY*13), (255, 255, 255))
         d = ImageDraw.Draw(im)
@@ -371,7 +371,6 @@ class watcher:
                 im.paste(Image.new('RGB', (lineX, lineY),
                                    (255, 70, 70)), (0, i*lineY))
         # match
-        print("match")
         d.text((10, 10), match['map']+" | " +
                match['gameMode'], font=font, fill=(0, 0, 0))
         d.text((10, 110), 'Blue Team', font=font, fill=(0, 0, 0))
@@ -383,12 +382,10 @@ class watcher:
             d.text((1510, y), 'Wins', font=font, fill=(0, 0, 0))
             d.text((1650, y), 'Losses', font=font, fill=(0, 0, 0))
         # participants
-        print("part")
         initial_y = 210
         i = 1
 
         for data in participants:
-            print("i = "+str(i))
             im.paste(im=self.getImage(
                 latest['n']['champion'], 'champion', data['championId']), box=(10, initial_y))
             im.paste(im=self.getImage(
