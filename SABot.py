@@ -239,7 +239,7 @@ async def live_game_tracker():
                 with BytesIO() as image_binary:
                     content[1].save(image_binary, 'PNG')
                     image_binary.seek(0)
-                    await guild.system_channel.send(file=discord.File(fp=image_binary, filename='image.PNG'))
+                    await guild.system_channel.send(file=discord.File(fp=image_binary, filename='image.png'))
 
 
 def preview_current_game(name, guild, lt=True):
@@ -251,31 +251,6 @@ def preview_current_game(name, guild, lt=True):
         return ['403', content]
     else:
         return
-    '''
-    content = "```ini\n["+str(d[0]['map'])+" | "+d[0]['gameMode']+" | "+str(
-        int(d[0]['gameLength']/60))+":"+str(d[0]['gameLength'] % 60)+"]\n"
-    content += "Blue Team\n"
-    for i in range(0, 5):
-        if d[1][i]['tier'] == 'unranked':
-            content += d[1][i]['championId']+" | " + \
-                d[1][i]['summonerName']+" | "+d[1][i]['tier']+"\n"
-        else:
-            content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank'] + \
-                " | "+str(d[1][i]['avarage'])+"% | "+str(d[1][i]['wins']
-                                                         ) + " wins | "+str(d[1][i]['losses'])+" losses \n"
-    content += "Red Team\n"
-    for i in range(5, 10):
-        if d[1][i]['tier'] == 'unranked':
-            content += d[1][i]['championId']+" | " + \
-                d[1][i]['summonerName']+" | "+d[1][i]['tier']+"\n"
-        else:
-            content += d[1][i]['championId']+" | "+d[1][i]['summonerName']+" | "+d[1][i]['tier']+" "+d[1][i]['rank'] + \
-                " | "+str(d[1][i]['avarage'])+"% | "+str(d[1][i]['wins']
-                                                         ) + " wins | "+str(d[1][i]['losses'])+" losses \n"
-    content += "```"
-    
-    return content
-    '''
 
 
 bot.run(setup.token)
