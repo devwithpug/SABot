@@ -353,6 +353,7 @@ class watcher:
         return self.matchWrapper(latest, data[0], data[1])
 
     def matchWrapper(self, latest, match, participants):
+        print("bg")
         # background
         lineX = 2000
         lineY = 100
@@ -370,6 +371,7 @@ class watcher:
                 im.paste(Image.new('RGB', (lineX, lineY),
                                    (255, 70, 70)), (0, i*lineY))
         # match
+        print("match")
         d.text((10, 10), match['map']+" | "+match['gameMode'], font=ImageFont.truetype(
             '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
         d.text((10, 110), 'Blue Team', font=ImageFont.truetype(
@@ -388,10 +390,12 @@ class watcher:
             d.text((1650, y), 'Losses', font=ImageFont.truetype(
                 '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
         # participants
+        print("part")
         initial_y = 210
         i = 1
 
         for data in participants:
+            print("i = "+str(i))
             im.paste(im=self.getImage(
                 latest['n']['champion'], 'champion', data['championId']), box=(10, initial_y))
             im.paste(im=self.getImage(
