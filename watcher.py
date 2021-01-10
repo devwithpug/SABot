@@ -356,7 +356,7 @@ class watcher:
         # background
         lineX = 1850
         lineY = 100
-        font = ImageFont.truetype('./data/font/Arial.ttf', 50)
+        font = ImageFont.truetype('Arial.ttf', 50)
 
         im = Image.new('RGBA', (lineX, lineY*13), (255, 255, 255))
         d = ImageDraw.Draw(im)
