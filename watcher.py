@@ -3,6 +3,10 @@ import pandas as pd
 import os
 import time
 import requests
+from PIL import Image, ImageDraw, ImageFont
+from urllib import request
+from io import BytesIO
+import matplotlib.pyplot as plt
 
 
 class watcher:
@@ -107,15 +111,16 @@ class watcher:
         Returns:
             str: Operation result
         """
-        try:
-            self.lol_watcher.summoner.by_name(
-                self.guild_region[guild_id], summonerName)
-        except (ApiError, Exception) as err:
-            if err.response.status_code == 404:
-                return "등록되지 않은 소환사입니다. 오타를 확인 해주세요."
-            else:
-                return "ERROR OCCURED"
         if add:
+            try:
+                self.lol_watcher.summoner.by_name(
+                    self.guild_region[guild_id], summonerName)
+            except (ApiError, Exception) as err:
+                if err.response.status_code == 404:
+                    return "등록되지 않은 소환사입니다. 오타를 확인 해주세요."
+                else:
+                    return "ERROR OCCURED"
+
             if summonerName in self.summoner_list_temp[guild_id]:
                 return "이미 등록된 소환사 입니다."
             else:
@@ -269,13 +274,14 @@ class watcher:
         champ_version = latest['n']['champion']
         static_champ_list = self.lol_watcher.data_dragon.champions(
             champ_version, False, self.locale_dict[self.guild_region[str(guild.id)]])
+        static_spell_list = self.lol_watcher.data_dragon.summoner_spells(
+            latest['v'], self.locale_dict[self.guild_region[str(guild.id)]])
 
         match_data['gameId'] = match['gameId']
         match_data['gameType'] = match['gameType']
-        match_data['gameStartTime'] = match['gameStartTime']
         match_data['mapId'] = match['mapId']
         match_data['gameLength'] = match['gameLength']
-        match_data['platformId'] = match['platformId']
+
         try:
             for queues in self.queues:
                 if queues['queueId'] == match['gameQueueConfigId']:
@@ -293,13 +299,21 @@ class watcher:
             participants_row['championId'] = row['championId']
             participants_row['summonerName'] = row['summonerName']
             participants_row['summonerId'] = row['summonerId']
+            participants_row['sp1'] = row['spell1Id']
+            participants_row['sp2'] = row['spell2Id']
             participants.append(participants_row)
         champ_dict = {}
+        spell_dict = {}
         for champ in static_champ_list['data']:
             row = static_champ_list['data'][champ]
-            champ_dict[row['key']] = row['name']
+            champ_dict[row['key']] = row['id']
+        for spell in static_spell_list['data']:
+            row = static_spell_list['data'][spell]
+            spell_dict[row['key']] = row['id']
         for row in participants:
             row['championId'] = champ_dict[str(row['championId'])]
+            row['sp1'] = spell_dict[str(row['sp1'])]
+            row['sp2'] = spell_dict[str(row['sp2'])]
         data.append(participants)
         i = 0
         for participant in data[1]:
@@ -321,15 +335,107 @@ class watcher:
                     continue
                 participants[i]['tier'] = row[ranked_solo_index]['tier']
                 participants[i]['rank'] = row[ranked_solo_index]['rank']
-                participants[i]['leaguePoints'] = row[ranked_solo_index]['leaguePoints']
                 participants[i]['wins'] = row[ranked_solo_index]['wins']
                 participants[i]['losses'] = row[ranked_solo_index]['losses']
                 participants[i]['avarage'] = round(
                     row[ranked_solo_index]['wins']/(row[ranked_solo_index]['wins']+row[ranked_solo_index]['losses'])*100, 2)
             else:
                 participants[i]['tier'] = 'unranked'
+                participants[i]['rank'] = ''
+                participants[i]['wins'] = ''
+                participants[i]['losses'] = ''
+                participants[i]['avarage'] = ''
             i += 1
 
         df = pd.DataFrame(participants)
         print(df)
-        return data
+
+        return self.matchWrapper(latest, data[0], data[1])
+
+    def matchWrapper(self, latest, match, participants):
+        # background
+        lineX = 2000
+        lineY = 100
+
+        im = Image.new('RGBA', (lineX, lineY*13), (255, 255, 255))
+        d = ImageDraw.Draw(im)
+        line = Image.new('RGB', (lineX, lineY), (230, 230, 230))
+        for i in range(0, 13):
+            if i % 2 == 0:
+                im.paste(line, (0, i*lineY))
+            elif i == 1:
+                im.paste(Image.new('RGB', (lineX, lineY),
+                                   (85, 85, 255)), (0, i*lineY))
+            elif i == 7:
+                im.paste(Image.new('RGB', (lineX, lineY),
+                                   (255, 70, 70)), (0, i*lineY))
+        # match
+        d.text((10, 10), match['map']+" | "+match['gameMode'], font=ImageFont.truetype(
+            '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+        d.text((10, 110), 'Blue Team', font=ImageFont.truetype(
+            '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+        d.text((10, 710), 'Red Team', font=ImageFont.truetype(
+            '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+        for y in range(110, 711, 600):
+            d.text((310, y), 'Name', font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            d.text((810, y), 'Tier', font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            d.text((1310, y), 'Ratio', font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            d.text((1510, y), 'Wins', font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            d.text((1650, y), 'Losses', font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+        # participants
+        initial_y = 210
+        i = 1
+
+        for data in participants:
+            im.paste(im=self.getImage(
+                latest['n']['champion'], 'champion', data['championId']), box=(10, initial_y))
+            im.paste(im=self.getImage(
+                latest['v'], 'spell', data['sp1']), box=(110, initial_y))
+            im.paste(im=self.getImage(
+                latest['v'], 'spell', data['sp2']), box=(210, initial_y))
+            d.text((310, initial_y), data['summonerName'], font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            if data['tier'] != 'unranked':
+                tier_image = self.getImage(latest['v'], 'tier', data['tier'])
+                im.paste(tier_image, (810, initial_y), tier_image)
+            d.text((950, initial_y), data['tier']+' '+data['rank'], font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            if type(data['avarage']) is float:
+                d.text((1310, initial_y), str(data['avarage'])+'%', font=ImageFont.truetype(
+                    '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            d.text((1510, initial_y), str(data['wins']), font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            d.text((1650, initial_y), str(data['losses']), font=ImageFont.truetype(
+                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            i += 1
+            if i == 6:
+                initial_y += 200
+            else:
+                initial_y += 100
+
+        return im
+
+    def getImage(self, version, type, name):
+        if type == 'champion':
+            url = "https://ddragon.leagueoflegends.com/cdn/" + \
+                version+"/img/champion/"+name+".png"
+            res = request.urlopen(url).read()
+            img = Image.open(BytesIO(res))
+            img = img.resize((80, 80))
+            return img
+        elif type == 'spell':
+            url = "https://ddragon.leagueoflegends.com/cdn/" + \
+                version+"/img/spell/"+name+".png"
+            res = request.urlopen(url).read()
+            img = Image.open(BytesIO(res))
+            img = img.resize((80, 80))
+            return img
+        elif type == 'tier':
+            img = Image.open('./data/assets/'+name+'.png')
+            img = img.resize((80, 80))
+            return img
