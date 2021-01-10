@@ -331,6 +331,10 @@ class watcher:
                     row[ranked_solo_index]
                 except IndexError:
                     participants[i]['tier'] = 'unranked'
+                    participants[i]['rank'] = ''
+                    participants[i]['wins'] = ''
+                    participants[i]['losses'] = ''
+                    participants[i]['avarage'] = ''
                     i += 1
                     continue
                 participants[i]['tier'] = row[ranked_solo_index]['tier']
