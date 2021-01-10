@@ -353,7 +353,6 @@ class watcher:
         return self.matchWrapper(latest, data[0], data[1])
 
     def matchWrapper(self, latest, match, participants):
-        print("bg")
         # background
         lineX = 2000
         lineY = 100
@@ -371,31 +370,28 @@ class watcher:
                 im.paste(Image.new('RGB', (lineX, lineY),
                                    (255, 70, 70)), (0, i*lineY))
         # match
-        print("match")
         d.text((10, 10), match['map']+" | "+match['gameMode'], font=ImageFont.truetype(
-            '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
         d.text((10, 110), 'Blue Team', font=ImageFont.truetype(
-            '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
         d.text((10, 710), 'Red Team', font=ImageFont.truetype(
-            '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+            './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
         for y in range(110, 711, 600):
             d.text((310, y), 'Name', font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             d.text((810, y), 'Tier', font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             d.text((1310, y), 'Ratio', font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             d.text((1510, y), 'Wins', font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             d.text((1650, y), 'Losses', font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
         # participants
-        print("part")
         initial_y = 210
         i = 1
 
         for data in participants:
-            print("i = "+str(i))
             im.paste(im=self.getImage(
                 latest['n']['champion'], 'champion', data['championId']), box=(10, initial_y))
             im.paste(im=self.getImage(
@@ -403,19 +399,19 @@ class watcher:
             im.paste(im=self.getImage(
                 latest['v'], 'spell', data['sp2']), box=(210, initial_y))
             d.text((310, initial_y), data['summonerName'], font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             if data['tier'] != 'unranked':
                 tier_image = self.getImage(latest['v'], 'tier', data['tier'])
                 im.paste(tier_image, (810, initial_y), tier_image)
             d.text((950, initial_y), data['tier']+' '+data['rank'], font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             if type(data['avarage']) is float:
                 d.text((1310, initial_y), str(data['avarage'])+'%', font=ImageFont.truetype(
-                    '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                    './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             d.text((1510, initial_y), str(data['wins']), font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             d.text((1650, initial_y), str(data['losses']), font=ImageFont.truetype(
-                '/Library/Fonts/Arial Unicode.ttf', 50), fill=(0, 0, 0))
+                './data/font/Arial Unicode.ttf', 50), fill=(0, 0, 0))
             i += 1
             if i == 6:
                 initial_y += 200
