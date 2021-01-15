@@ -257,17 +257,16 @@ class watcher:
                         or err.response.status_code == 403
                         or err.response.status_code == 503
                         or err.response.status_code == 504
+                        or err.response.status_code == 429
                     ):
                         return
                     else:
                         print(
-                            "[{}]Error occured at live_game_tracker. All of live_game_id data has been deleted.".format(
+                            "[{}]Unusual error occured at live_game_tracker".format(
                                 time.strftime("%c", time.localtime(time.time()))
                             )
                         )
                         print(err)
-                        self.live_game_id[guild.id].clear()
-                        return
                 print(
                     "[{}][Live_game_tracker][{}]Live game ended : {}".format(
                         time.strftime("%c", time.localtime(time.time())),
