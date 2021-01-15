@@ -86,12 +86,14 @@ class watcher:
 
         for guild in guilds:
             if not guild.id in guild_id_list:
-                self.guild.insert_one({"_id": guild.id})
+                self.guild.insert_one({"_id": guild.id, "guild_name": guild.name})
                 print("new db documents was inserted, id : ", guild.id)
-
-            self.guild_region[guild.id] = self.guild.find_one({"_id": guild.id})[
-                "region"
-            ]
+            try:
+                self.guild_region[guild.id] = self.guild.find_one({"_id": guild.id})[
+                    "region"
+                ]
+            except KeyError:
+                continue
             self.user_list[guild.id] = [
                 n["user_name"] for n in self.user.find({"guild_id": guild.id})
             ]
