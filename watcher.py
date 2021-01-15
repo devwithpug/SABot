@@ -84,17 +84,16 @@ class watcher:
         guild_id_list = [g["_id"] for g in self.guild.find()]
         self.user_list = {}
 
-        for guild_id in guild_id_list:
-            print("debug1")
-            print(self.guild.count_documents({"_id": guild_id}))
-            if not self.guild.count_documents({"_id": guild_id}):
-                self.guild.insert_one({"_id": guild_id})
-                print("new db documents was inserted, id : ", guild_id)
-            self.guild_region[guild_id] = self.guild.find_one({"_id": guild_id})[
+        for guild in guilds:
+            if not guild.id in guild_id_list:
+                self.guild.insert_one({"_id": guild.id})
+                print("new db documents was inserted, id : ", guild.id)
+
+            self.guild_region[guild.id] = self.guild.find_one({"_id": guild.id})[
                 "region"
             ]
-            self.user_list[guild_id] = [
-                n["user_name"] for n in self.user.find({"guild_id": guild_id})
+            self.user_list[guild.id] = [
+                n["user_name"] for n in self.user.find({"guild_id": guild.id})
             ]
 
     def get_summoner_list(self, guild_id):
