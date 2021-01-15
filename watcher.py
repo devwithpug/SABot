@@ -85,6 +85,9 @@ class watcher:
         self.user_list = {}
 
         for guild_id in guild_id_list:
+            if not self.guild.count_documents({"_id": guild_id}):
+                self.guild.insert_one({"_id": guild_id})
+                print("new db documents was inserted, id : ", guild_id)
             self.guild_region[guild_id] = self.guild.find_one({"_id": guild_id})[
                 "region"
             ]
