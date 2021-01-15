@@ -142,23 +142,22 @@ async def l(ctx, *args):
                 and m.channel == ctx.channel
             )
 
-        if setup.wt.is_setup_already(ctx.guild):
-            await ctx.send(
-                embed=discord.Embed(
-                    title="Your discord server was already setup. Would you like to reset it?",
-                    description="'y' : Yes 'n' : No",
-                ).set_author(name="Live tracker Setup")
-            )
-            try:
-                confirm = await bot.wait_for(
-                    "message", timeout=30.0, check=check_confirm
-                )
-            except asyncio.TimeoutError:
-                await ctx.send(embed=discord.Embed(title="Timeout : Try again."))
-                return
-            if confirm.content == "n":
-                return
-            setup.wt.delete_guild(ctx.guild.id)
+        await ctx.send(
+            embed=discord.Embed(
+                title="Type 'y' to start setup",
+                description="'y' : Yes 'n' : No",
+            ).set_author(name="Live tracker Setup")
+        )
+        try:
+            confirm = await bot.wait_for("message", timeout=30.0, check=check_confirm)
+        except asyncio.TimeoutError:
+            await ctx.send(embed=discord.Embed(title="Timeout : Try again."))
+            return
+        if confirm.content == "n":
+            return
+
+        setup.wt.delete_guild(ctx.guild.id)
+
         await ctx.send(
             embed=discord.Embed(
                 title="Choose your League Of Legends region",
