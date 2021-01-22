@@ -70,8 +70,9 @@ class watcher:
             self.champ_version = self.latest["n"]["champion"]
 
             url = (
-                "https://ddragon.leagueoflegends.com/cdn/" + self.latest["v"]
-                | "/data/en_US/summoner.json"
+                "https://ddragon.leagueoflegends.com/cdn/"
+                + self.latest["v"]
+                + "/data/en_US/summoner.json"
             )
             self.static_spell_list = requests.get(url).json()
 
