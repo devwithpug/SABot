@@ -458,7 +458,7 @@ class watcher:
         # participants
         initial_y = 210
 
-        for data, i in zip(participants, range(1, 11)):
+        for data, i in zip(participants, range(10)):
             if i == 6:
                 initial_y += 200
             else:
