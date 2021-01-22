@@ -458,12 +458,7 @@ class watcher:
         # participants
         initial_y = 210
 
-        for data, i in zip(participants, range(10)):
-            if i == 6:
-                initial_y += 200
-            else:
-                initial_y += 100
-
+        for data, i in zip(participants, range(1, 11)):
             im.paste(
                 im=self.getImage(
                     latest["n"]["champion"], "champion", data["championId"]
@@ -497,6 +492,11 @@ class watcher:
                 )
             d.text((1510, initial_y), str(data["wins"]), font=font, fill=(0, 0, 0))
             d.text((1650, initial_y), str(data["losses"]), font=font, fill=(0, 0, 0))
+
+            if i == 6:
+                initial_y += 200
+            else:
+                initial_y += 100
 
         return im
 
