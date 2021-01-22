@@ -493,7 +493,7 @@ class watcher:
             d.text((1510, initial_y), str(data["wins"]), font=font, fill=(0, 0, 0))
             d.text((1650, initial_y), str(data["losses"]), font=font, fill=(0, 0, 0))
 
-            if i == 6:
+            if i == 5:
                 initial_y += 200
             else:
                 initial_y += 100
