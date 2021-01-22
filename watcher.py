@@ -43,6 +43,8 @@ class watcher:
         self.queues = requests.get(
             "http://static.developer.riotgames.com/docs/lol/queues.json"
         ).json()
+        self.champ_version = ""
+        self.update_ddragon_data()
         self.live_game_id = {}
 
     def init_riot_api(self):
@@ -53,6 +55,25 @@ class watcher:
 
     def is_setup_already(self, guild):
         return self.guild.count_documents({"_id": guild.id})
+
+    def update_ddragon_data(self):
+        url = "https://ddragon.leagueoflegends.com/realms/kr.json"
+        self.latest = requests.get(url).json()
+        if self.champ_version != self.latest["n"]["champion"]:
+            print(
+                "[{}][Live_game_tracker]Data Dragon version was updated to {} from {}".format(
+                    time.strftime("%c", time.localtime(time.time())),
+                    self.latest["n"]["champion"],
+                    self.champ_version,
+                )
+            )
+            self.champ_version = self.latest["n"]["champion"]
+
+            url = (
+                "https://ddragon.leagueoflegends.com/cdn/" + self.latest["v"]
+                | "/data/en_US/summoner.json"
+            )
+            self.static_spell_list = requests.get(url).json()
 
     def setup(self, region, guild):
         if self.guild.count_documents({"_id": guild.id}):
@@ -305,15 +326,8 @@ class watcher:
                     )
                 )
 
-        latest = self.lol_watcher.data_dragon.versions_for_region(
-            self.guild_region[guild.id]
-        )
-        champ_version = latest["n"]["champion"]
         static_champ_list = self.lol_watcher.data_dragon.champions(
-            champ_version, False, self.locale_dict[self.guild_region[guild.id]]
-        )
-        static_spell_list = self.lol_watcher.data_dragon.summoner_spells(
-            latest["v"], self.locale_dict[self.guild_region[guild.id]]
+            self.champ_version, False, self.locale_dict[self.guild_region[guild.id]]
         )
 
         match_data["gameId"] = match["gameId"]
@@ -346,8 +360,8 @@ class watcher:
         for champ in static_champ_list["data"]:
             row = static_champ_list["data"][champ]
             champ_dict[row["key"]] = row["id"]
-        for spell in static_spell_list["data"]:
-            row = static_spell_list["data"][spell]
+        for spell in self.static_spell_list["data"]:
+            row = self.static_spell_list["data"][spell]
             spell_dict[row["key"]] = row["id"]
         for row in participants:
             try:
@@ -404,7 +418,7 @@ class watcher:
         df = pd.DataFrame(participants)
         print(df)
 
-        return self.matchWrapper(latest, data[0], data[1])
+        return self.matchWrapper(self.latest, data[0], data[1])
 
     def matchWrapper(self, latest, match, participants):
         # background

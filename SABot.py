@@ -319,6 +319,8 @@ async def live_game_tracker():
         )
         return
 
+    setup.wt.update_ddragon_data()
+
     for guild in bot.guilds:
         if setup.lt[guild.id] is False:
             continue
