@@ -372,8 +372,8 @@ class watcher:
             row["sp1"] = spell_dict[str(row["sp1"])]
             row["sp2"] = spell_dict[str(row["sp2"])]
         data.append(participants)
-        i = 0
-        for participant in data[1]:
+
+        for participant, i in zip(data[1], range(10)):
             row = self.lol_watcher.league.by_summoner(
                 self.guild_region[guild.id], participant["summonerId"]
             )
@@ -393,7 +393,6 @@ class watcher:
                     participants[i]["wins"] = ""
                     participants[i]["losses"] = ""
                     participants[i]["avarage"] = ""
-                    i += 1
                     continue
                 participants[i]["tier"] = row[ranked_solo_index]["tier"]
                 participants[i]["rank"] = row[ranked_solo_index]["rank"]
@@ -414,7 +413,6 @@ class watcher:
                 participants[i]["wins"] = ""
                 participants[i]["losses"] = ""
                 participants[i]["avarage"] = ""
-            i += 1
 
         df = pd.DataFrame(participants)
         print(df)
@@ -459,9 +457,13 @@ class watcher:
             d.text((1650, y), "Losses", font=font, fill=(0, 0, 0))
         # participants
         initial_y = 210
-        i = 1
 
-        for data in participants:
+        for data, i in zip(participants, range(1, 11)):
+            if i == 6:
+                initial_y += 200
+            else:
+                initial_y += 100
+
             im.paste(
                 im=self.getImage(
                     latest["n"]["champion"], "champion", data["championId"]
@@ -495,11 +497,6 @@ class watcher:
                 )
             d.text((1510, initial_y), str(data["wins"]), font=font, fill=(0, 0, 0))
             d.text((1650, initial_y), str(data["losses"]), font=font, fill=(0, 0, 0))
-            i += 1
-            if i == 6:
-                initial_y += 200
-            else:
-                initial_y += 100
 
         return im
 
