@@ -497,9 +497,13 @@ class watcher:
                 + name
                 + ".png"
             )
-            res = request.urlopen(url).read()
-            img = Image.open(BytesIO(res))
-            img = img.resize((80, 80))
+            try:
+                res = request.urlopen(url).read()
+            except Exception:
+                img = Image.new("RGB", (80, 80))
+            else:
+                img = Image.open(BytesIO(res))
+                img = img.resize((80, 80))
             return img
         elif type == "spell":
             url = (
