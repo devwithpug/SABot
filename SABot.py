@@ -16,7 +16,7 @@ class sabot:
         t.close()
 
         # Bot Settings
-        self.game = discord.Game("!command")
+        self.game = discord.Game("희동이랑 떨")
         self.prefix = "!"
         self.wt = watcher.watcher()
         self.lt = {}
@@ -275,7 +275,7 @@ async def l(ctx, *args):
         region = setup.wt.guild_region[ctx.guild.id]
         names = ""
         for name in setup.wt.get_summoner_list(ctx.guild.id):
-            names += name
+            names += name + "\n"
         await ctx.send(
             embed=discord.Embed(
                 title="Region : " + region, description=names

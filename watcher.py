@@ -5,7 +5,6 @@ import os, time, requests
 from PIL import Image, ImageDraw, ImageFont
 from urllib import request
 from io import BytesIO
-import matplotlib.pyplot as plt
 
 
 class watcher:
@@ -351,7 +350,10 @@ class watcher:
             row = static_spell_list["data"][spell]
             spell_dict[row["key"]] = row["id"]
         for row in participants:
-            row["championId"] = champ_dict[str(row["championId"])]
+            try:
+                row["championId"] = champ_dict[str(row["championId"])]
+            except KeyError:
+                row["championId"] = "NULL"
             row["sp1"] = spell_dict[str(row["sp1"])]
             row["sp2"] = spell_dict[str(row["sp2"])]
         data.append(participants)
