@@ -421,7 +421,7 @@ class watcher:
 
     def matchWrapper(self, latest, match, participants):
         # background
-        lineX = 1850
+        lineX = 1920
         lineY = 100
 
         font = ImageFont.truetype("NanumGothic.ttf", 50)
@@ -452,9 +452,9 @@ class watcher:
         for y in range(110, 711, 600):
             d.text((310, y), "Name", font=font, fill=(0, 0, 0))
             d.text((810, y), "Tier", font=font, fill=(0, 0, 0))
-            d.text((1310, y), "Ratio", font=font, fill=(0, 0, 0))
-            d.text((1510, y), "Wins", font=font, fill=(0, 0, 0))
-            d.text((1650, y), "Losses", font=font, fill=(0, 0, 0))
+            d.text((1380, y), "Ratio", font=font, fill=(0, 0, 0))
+            d.text((1580, y), "Wins", font=font, fill=(0, 0, 0))
+            d.text((1720, y), "Losses", font=font, fill=(0, 0, 0))
         # participants
         initial_y = 210
 
@@ -485,13 +485,13 @@ class watcher:
             )
             if type(data["avarage"]) is float:
                 d.text(
-                    (1310, initial_y),
+                    (1380, initial_y),
                     str(data["avarage"]) + "%",
                     font=font,
                     fill=(0, 0, 0),
                 )
-            d.text((1510, initial_y), str(data["wins"]), font=font, fill=(0, 0, 0))
-            d.text((1650, initial_y), str(data["losses"]), font=font, fill=(0, 0, 0))
+            d.text((1580, initial_y), str(data["wins"]), font=font, fill=(0, 0, 0))
+            d.text((1720, initial_y), str(data["losses"]), font=font, fill=(0, 0, 0))
 
             if i == 5:
                 initial_y += 200
