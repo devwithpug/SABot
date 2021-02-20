@@ -1,6 +1,8 @@
 # SABot
 ## Dicord Bot for League of Legends match auto tracker
 
+![SABot](https://user-images.githubusercontent.com/69145799/108334673-853a4400-7215-11eb-96c6-7a3d6872e4eb.png)
+
 ## Features:
 
 1. Search Summoners statistics in `League of Legends.`
