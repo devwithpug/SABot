@@ -424,7 +424,10 @@ class watcher:
         lineX = 1920
         lineY = 100
 
-        font = ImageFont.truetype("NanumGothic.ttf", 50)
+        try:
+            font = ImageFont.truetype("NanumGothic.ttf", 50)
+        except OSError:
+            font = ImageFont.truetype("arial.ttf", 50)
 
         im = Image.new("RGBA", (lineX, lineY * 13), (255, 255, 255))
         d = ImageDraw.Draw(im)

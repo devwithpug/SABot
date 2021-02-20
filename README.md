@@ -31,15 +31,9 @@ Discord token file : `.token` in your directory with `SABot.py`
 Riot API key file : `.riot_api_key` in your directory with `SABot.py`
 
 mongoDB Cluster Code file : `.mongodb` in your directory with `SABot.py`
->mongodb+srv://admin:<password>@cluster0.9ycx5.mongodb.net/Cluster0?retryWites=true&w=majority
-   
-   
+>mongodb+srv://admin:(your_db_password)@cluster0.9ycx5.mongodb.net/Cluster0?retryWites=true&w=majority
+
 Run `SABot.py` and type `!setup` to your Discord server.
-
-###OSError: cannot open resource // getfont()
->SABot will open fonts(NanumGothic.ttf) from your OS. This font supports Korean.   
-To change this settings, `watcher.py` line 427: will helps.
-
 
 
 
