@@ -1,9 +1,8 @@
-import discord, asyncio, os, requests, time
+import discord, asyncio, os, time
 import watcher
 from PIL import Image
 from io import BytesIO
 from discord.ext import commands, tasks
-from bs4 import BeautifulSoup
 
 
 class sabot:
@@ -207,19 +206,31 @@ async def l(ctx, *args):
     name = " ".join(args[1:])
 
     if args[0] == "match" and len(args) > 1:
-        content = preview_current_game(name, ctx.guild, lt=False)
-        if content is None:
-            await ctx.send(
-                embed=discord.Embed(title="{} is not in the match.".format(name))
+        response = setup.wt.search_summoner(ctx.guild, name)
+        if response.status_code == 200 and setup.wt.search_live_match(
+            ctx.guild, response.json()["id"], False
+        ):
+            embed = discord.Embed(
+                title="실시간 매치가 발견되었습니다!",
+                description="데이터 불러오는 중...",
+                colour=discord.Colour.green(),
             )
-            return
-        elif content[0] == "403":
-            await ctx.send(content=content)
-        elif content[0] == "200":
-            with BytesIO() as image_binary:
-                content[1].save(image_binary, "PNG")
-                image_binary.seek(0)
-                await ctx.send(file=discord.File(fp=image_binary, filename="image.PNG"))
+            await ctx.send(embed=embed, delete_after=1.0)
+
+            # match found
+            content = setup.wt.load_live_match_data(
+                ctx.guild, response.json()["id"], False
+            )
+
+            if type(content) is Image.Image:
+                with BytesIO() as image_binary:
+                    content.save(image_binary, "PNG")
+                    image_binary.seek(0)
+                    await ctx.send(
+                        file=discord.File(fp=image_binary, filename="image.png")
+                    )
+            elif type(content) is str:
+                await ctx.send(content=content)
 
     elif args[0] == "add" and len(args) > 1:
         d = setup.wt.edit_summoner_list(ctx.guild.id, True, name)
@@ -324,31 +335,48 @@ async def live_game_tracker():
     for guild in bot.guilds:
         if setup.lt[guild.id] is False:
             continue
-        setup.wt.is_match_ended(guild)
+        setup.wt.remove_ended_match(guild)
         for summonerName in setup.wt.get_summoner_list(guild.id):
-            content = preview_current_game(summonerName.rstrip("\n"), guild)
-            if content is None:
-                continue
-            elif content[0] == "403":
-                await guild.system_channel.send(content=content)
-            elif content[0] == "200":
-                with BytesIO() as image_binary:
-                    content[1].save(image_binary, "PNG")
-                    image_binary.seek(0)
-                    await guild.system_channel.send(
-                        file=discord.File(fp=image_binary, filename="image.png")
-                    )
+            response = setup.wt.search_summoner(guild, summonerName)
+            if response.status_code == 200 and setup.wt.search_live_match(
+                guild, response.json()["id"]
+            ):
+                embed = discord.Embed(
+                    title="실시간 매치가 발견되었습니다!",
+                    description="데이터 불러오는 중...",
+                    colour=discord.Colour.green(),
+                )
+                await guild.system_channel.send(embed=embed, delete_after=1.0)
+
+                # match found
+                content = setup.wt.load_live_match_data(guild, response.json()["id"])
+
+                if type(content) is Image.Image:
+                    with BytesIO() as image_binary:
+                        content.save(image_binary, "PNG")
+                        image_binary.seek(0)
+                        await guild.system_channel.send(
+                            file=discord.File(fp=image_binary, filename="image.png")
+                        )
+                elif type(content) is str:
+                    await guild.system_channel.send(content=content)
+                else:
+                    continue
 
 
 def preview_current_game(name, guild, lt=True):
-    content = setup.wt.live_match(name, guild, lt)
+    response = setup.wt.search_summoner(guild, name)
+    if response.status_code == 200 and setup.wt.search_live_match(
+        guild, response.json()["id"], False
+    ):
+        content = setup.wt.load_live_match_data(guild, response.json()["id"], lt)
 
-    if type(content) is Image.Image:
-        return ["200", content]
-    elif type(content) is str:
-        return ["403", content]
-    else:
-        return
+        if type(content) is Image.Image:
+            return ["200", content]
+        elif type(content) is str:
+            return ["403", content]
+        else:
+            return
 
 
 bot.run(setup.token)

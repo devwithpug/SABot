@@ -1,9 +1,7 @@
 from pymongo.mongo_client import MongoClient
-from riotwatcher import LolWatcher, ApiError
 import pandas as pd
 import os, time, requests
 from PIL import Image, ImageDraw, ImageFont
-from urllib import request
 from io import BytesIO
 
 
@@ -14,7 +12,7 @@ class watcher:
 
         # Get riot_api_key
         with open(".riot_api_key", "r", encoding="utf-8") as t:
-            self.riot_api_key = t.read().split()[0]
+            self.riot_api_key = t.readline()
         print("riot_api_key : ", self.riot_api_key)
 
         # Get mongoDB cluster address
@@ -36,22 +34,17 @@ class watcher:
             "tr1": "tr_TR",
             "ru": "ru_RU",
         }
-        self.lol_watcher = LolWatcher(self.riot_api_key)
         self.db = MongoClient(self.cluster).get_database("sabot")
         self.guild = self.db["Guild"]
         self.user = self.db["User"]
-        self.queues = requests.get(
-            "http://static.developer.riotgames.com/docs/lol/queues.json"
-        ).json()
-        self.champ_version = ""
+        self.champ_version = None
         self.update_ddragon_data()
         self.live_game_id = {}
 
     def init_riot_api(self):
         with open(".riot_api_key", "r", encoding="utf-8") as t:
-            self.riot_api_key = t.read().split()[0]
+            self.riot_api_key = t.readline()
         print("Init riot_api_key : ", self.riot_api_key)
-        self.lol_watcher = LolWatcher(self.riot_api_key)
 
     def is_setup_already(self, guild):
         return self.guild.count_documents({"_id": guild.id})
@@ -59,7 +52,19 @@ class watcher:
     def update_ddragon_data(self):
         url = "https://ddragon.leagueoflegends.com/realms/kr.json"
         self.latest = requests.get(url).json()
-        if self.champ_version != self.latest["n"]["champion"]:
+        self.queues = requests.get(
+            "http://static.developer.riotgames.com/docs/lol/queues.json"
+        ).json()
+        if self.champ_version is None:
+            print(
+                "[{}][Live_game_tracker]Data Dragon v{} loaded".format(
+                    time.strftime("%c", time.localtime(time.time())),
+                    self.latest["n"]["champion"],
+                )
+            )
+            self.champ_version = self.latest["n"]["champion"]
+
+        elif self.champ_version != self.latest["n"]["champion"]:
             print(
                 "[{}][Live_game_tracker]Data Dragon version was updated to {} from {}".format(
                     time.strftime("%c", time.localtime(time.time())),
@@ -69,12 +74,13 @@ class watcher:
             )
             self.champ_version = self.latest["n"]["champion"]
 
-            url = (
-                "https://ddragon.leagueoflegends.com/cdn/"
-                + self.latest["v"]
-                + "/data/en_US/summoner.json"
-            )
-            self.static_spell_list = requests.get(url).json()
+        url = (
+            "https://ddragon.leagueoflegends.com/cdn/"
+            + self.latest["v"]
+            + "/data/en_US/"
+        )
+        self.static_champ_list = requests.get(url + "champion.json").json()
+        self.static_spell_list = requests.get(url + "summoner.json").json()
 
     def setup(self, region, guild):
         if self.guild.count_documents({"_id": guild.id}):
@@ -142,12 +148,12 @@ class watcher:
             str: Operation result
         """
         if add:
-            try:
-                self.lol_watcher.summoner.by_name(
-                    self.guild_region[guild_id], summonerName
-                )
-            except (ApiError, Exception) as err:
-                if err.response.status_code == 404:
+            url = "https://{}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{}".format(
+                self.guild_region[guild_id], summonerName
+            )
+            response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
+            if response.status_code != 200:
+                if response.status_code == 404:
                     return "등록되지 않은 소환사입니다. 오타를 확인 해주세요."
                 else:
                     return "ERROR OCCURED"
@@ -184,18 +190,11 @@ class watcher:
             return "삭제 성공"
 
     def riot_api_status(self):
-        try:
-            self.lol_watcher.lol_status.shard_data("kr")
-        except (ApiError, Exception) as err:
-            print(err)
-            try:
-                return err.response.status_code
-            except AttributeError as err:
-                print(err)
-                return False
-        return 200
+        url = "https://kr.api.riotgames.com/lol/status/v4/platform-data"
+        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
+        return response.status_code
 
-    def is_match_ended(self, guild):
+    def remove_ended_match(self, guild):
         """Check the live_game was ended
 
         Args:
@@ -208,58 +207,86 @@ class watcher:
 
         matches = self.live_game_id[guild.id]
         for game in matches:
-            try:
-                self.lol_watcher.match.by_id(self.guild_region[guild.id], game)
-            except (ApiError, Exception):
-                continue
-            self.live_game_id[guild.id].remove(game)
-            print(
-                "[{}][Live_game_tracker][{}]Live game ended : {}".format(
-                    time.strftime("%c", time.localtime(time.time())), guild.name, game
+            response = self.is_match_ended(guild, game)
+            if response.status_code == 200:
+                print(
+                    "[{}][Live_game_tracker][{}]Live game ended : {}".format(
+                        time.strftime("%c", time.localtime(time.time())),
+                        guild.name,
+                        game,
+                    )
                 )
-            )
+                self.live_game_id[guild.id].remove(game)
 
-    def live_match(self, summonerName, guild, lt=True):
+    def is_match_ended(self, guild, match):
+        url = "https://{}.api.riotgames.com/lol/match/v4/matches/{}".format(
+            self.guild_region[guild.id], match
+        )
+        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
+        return response
+
+    def search_summoner(self, guild, name):
+        url = (
+            "https://{}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{}".format(
+                self.guild_region[guild.id], name
+            )
+        )
+        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
+        return response
+
+    def search_live_match(self, guild, summonerId, dup=True):
+        url = "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
+            self.guild_region[guild.id], summonerId
+        )
+        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
+        if response.status_code == 200 and dup:
+            try:
+                if response.json()["gameId"] in self.live_game_id[guild.id]:
+                    return False
+                else:
+                    return True
+            except KeyError:
+                return True
+        elif response.status_code == 200 and not dup:
+            return True
+        else:
+            return False
+
+    def load_live_match_data(self, guild, match, lt=True):
         """Call Riot API to receive live_match information.
 
         Args:
-            summonerName (str): Summoner's name
             guild (Guild()): discord.Guild
+            match: response.json()
 
         Returns:
             dict: live_match data
         """
-        try:
-            me = self.lol_watcher.summoner.by_name(
-                self.guild_region[guild.id], summonerName
-            )
-        except (ApiError, Exception) as err:
-            print(err)
-            if err.response.status_code == 404 and not lt:
-                return "`ERROR! 등록되지 않은 소환사입니다. : " + summonerName + "`"
-            if err.response.status_code == 403 and not lt:
-                return "`Riot API ERROR`"
-            elif err.response.status_code == 404 and lt:
-                self.edit_summoner_list(guild.id, False, summonerName)
-                return "`Live-tracker 오류 발생\n\
-                    소환사 [{}]의 닉네임이 변경되었거나 오류가 발생했습니다.\n\
-                    [!l add 소환사명] 명령어를 이용하여 다시 등록하시기 바랍니다.`".format(
-                    summonerName
-                )
-            else:
-                return
-        data = []
-        try:
-            match = self.lol_watcher.spectator.by_summoner(
-                self.guild_region[guild.id], me["id"]
-            )
-        except (ApiError, Exception) as err:
-            if err.response.status_code == 404:
-                return
-            else:
-                print(err)
-                return
+        # response = self.search_summoner(guild, summonerName)
+        # if response.status_code != 200:
+        #     if response.status_code == 404 and not lt:
+        #         return "`ERROR! 등록되지 않은 소환사입니다. : " + summonerName + "`"
+        #     elif response.status_code == 404 and lt:
+        #         self.edit_summoner_list(guild.id, False, summonerName)
+        #         return "`Live-tracker 오류 발생\n\
+        #             소환사 [{}]의 닉네임이 변경되었거나 오류가 발생했습니다.\n\
+        #             [!l add 소환사명] 명령어를 이용하여 다시 등록하시기 바랍니다.`".format(
+        #             summonerName
+        #         )
+        #     else:
+        #         return
 
+        url = "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
+            self.guild_region[guild.id], match
+        )
+        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
+        if response.status_code != 200:
+            return
+        elif response.status_code == 404:
+            return
+        match = response.json()
+
+        data = []
         match_data = {}
 
         if lt:
@@ -267,47 +294,14 @@ class watcher:
                 self.live_game_id[guild.id]
             except KeyError:
                 self.live_game_id[guild.id] = []
+
+            # When match was already in self.live_game_id
             if match["gameId"] in self.live_game_id[guild.id]:
-                try:
-                    self.lol_watcher.match.by_id(
-                        self.guild_region[guild.id], match["gameId"]
-                    )
-                except (ApiError, Exception) as err:
-                    if (
-                        err.response.status_code == 404
-                        or err.response.status_code == 403
-                        or err.response.status_code == 503
-                        or err.response.status_code == 504
-                        or err.response.status_code == 429
-                    ):
-                        return
-                    else:
-                        print(
-                            "[{}]Unusual error occured at live_game_tracker".format(
-                                time.strftime("%c", time.localtime(time.time()))
-                            )
-                        )
-                        print(err)
-                print(
-                    "[{}][Live_game_tracker][{}]Live game ended : {}".format(
-                        time.strftime("%c", time.localtime(time.time())),
-                        guild.name,
-                        match["gameId"],
-                    )
-                )
-                self.live_game_id[guild.id].remove(match["gameId"])
                 return
             else:
-                try:
-                    self.lol_watcher.match.by_id(
-                        self.guild_region[guild.id], match["gameId"]
-                    )
-                except (ApiError, Exception) as err:
-                    if err.response.status_code == 404:
-                        pass
-                    else:
-                        return
-                else:
+                response = self.is_match_ended(guild, match["gameId"])
+                # If the match was ended
+                if response.status_code != 404:
                     return
 
                 self.live_game_id[guild.id].append(match["gameId"])
@@ -326,10 +320,6 @@ class watcher:
                         str(self.live_game_id[guild.id]),
                     )
                 )
-
-        static_champ_list = self.lol_watcher.data_dragon.champions(
-            self.champ_version, False, self.locale_dict[self.guild_region[guild.id]]
-        )
 
         match_data["gameId"] = match["gameId"]
         match_data["gameType"] = match["gameType"]
@@ -358,8 +348,8 @@ class watcher:
             participants.append(participants_row)
         champ_dict = {}
         spell_dict = {}
-        for champ in static_champ_list["data"]:
-            row = static_champ_list["data"][champ]
+        for champ in self.static_champ_list["data"]:
+            row = self.static_champ_list["data"][champ]
             champ_dict[row["key"]] = row["id"]
         for spell in self.static_spell_list["data"]:
             row = self.static_spell_list["data"][spell]
@@ -374,9 +364,10 @@ class watcher:
         data.append(participants)
 
         for participant, i in zip(data[1], range(10)):
-            row = self.lol_watcher.league.by_summoner(
+            url = "https://{}.api.riotgames.com/lol/league/v4/entries/by-summoner/{}".format(
                 self.guild_region[guild.id], participant["summonerId"]
             )
+            row = requests.get(url, headers={"X-Riot-Token": self.riot_api_key}).json()
 
             if len(row) != 0:
                 ranked_solo_index = 0
@@ -427,7 +418,12 @@ class watcher:
         try:
             font = ImageFont.truetype("NanumGothic.ttf", 50)
         except OSError:
-            font = ImageFont.truetype("arial.ttf", 50)
+            try:
+                font = ImageFont.truetype("arial.ttf", 50)  # Window default font
+            except OSError:
+                font = ImageFont.truetype(
+                    "AppleSDGothicNeo.ttc", 50
+                )  # MacOS default font
 
         im = Image.new("RGBA", (lineX, lineY * 13), (255, 255, 255))
         d = ImageDraw.Draw(im)
@@ -512,14 +508,14 @@ class watcher:
                 + name
                 + ".png"
             )
-            try:
-                res = request.urlopen(url).read()
-            except Exception:
+            response = requests.get(url)
+            if response.status_code != 200:
                 img = Image.new("RGB", (80, 80))
             else:
-                img = Image.open(BytesIO(res))
+                img = Image.open(BytesIO(response.content))
                 img = img.resize((80, 80))
             return img
+
         elif type == "spell":
             url = (
                 "https://ddragon.leagueoflegends.com/cdn/"
@@ -528,10 +524,14 @@ class watcher:
                 + name
                 + ".png"
             )
-            res = request.urlopen(url).read()
-            img = Image.open(BytesIO(res))
-            img = img.resize((80, 80))
+            response = requests.get(url)
+            if response.status_code != 200:
+                img = Image.new("RGB", (80, 80))
+            else:
+                img = Image.open(BytesIO(response.content))
+                img = img.resize((80, 80))
             return img
+
         elif type == "tier":
             img = Image.open("./assets/" + name + ".png")
             img = img.resize((80, 80))

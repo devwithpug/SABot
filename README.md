@@ -26,6 +26,13 @@
 
 ## How to set up your own bot:
 
+####You need to install python packages with pip:
+```
+discord.py, asyncio, Pillow, pymongo, pandas
+```
+
+####And, you need to create token files:
+
 Discord token file : `.token` in your directory with `SABot.py`
 
 Riot API key file : `.riot_api_key` in your directory with `SABot.py`
@@ -33,11 +40,12 @@ Riot API key file : `.riot_api_key` in your directory with `SABot.py`
 mongoDB Cluster Code file : `.mongodb` in your directory with `SABot.py`
 >mongodb+srv://admin:(your_db_password)@cluster0.9ycx5.mongodb.net/Cluster0?retryWites=true&w=majority
 
-Run `SABot.py` and type `!setup` to your Discord server.
+Finally,   
+
+Run `SABot.py` and type `!l setup` to your Discord server.
 
 
 
 ## API Reference:
 * `discord.py` (https://github.com/Rapptz/discord.py)
 * `Riot API` (https://developer.riotgames.com/apis)
-* `Riot-Watcher` (https://github.com/pseudonym117/Riot-Watcher)
