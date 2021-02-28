@@ -40,6 +40,7 @@ class watcher:
         self.champ_version = None
         self.update_ddragon_data()
         self.live_game_id = {}
+        self.ended_game_temp = {}
 
     def init_riot_api(self):
         with open(".riot_api_key", "r", encoding="utf-8") as t:
@@ -217,6 +218,17 @@ class watcher:
                     )
                 )
                 self.live_game_id[guild.id].remove(game)
+                self.ended_game_temp(guild, game)
+
+    def ended_game_temp(self, guild, matchId):
+        try:
+            self.ended_game_temp[guild.id].append(matchId)
+        except KeyError:
+            self.ended_game_temp[guild.id] = []
+            self.ended_game_temp[guild.id].append(matchId)
+        else:
+            if len(self.ended_game_temp[guild.id]) > 10:
+                self.ended_game_temp[guild.id].pop(0)
 
     def is_match_ended(self, guild, match):
         url = "https://{}.api.riotgames.com/lol/match/v4/matches/{}".format(
@@ -241,13 +253,17 @@ class watcher:
         response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
         if response.status_code == 200 and dup:
             try:
-                if response.json()["gameId"] in self.live_game_id[guild.id]:
+                matchId = response.json()["gameId"]
+                if (
+                    matchId in self.live_game_id[guild.id]
+                    or matchId in self.ended_game_temp[guild.id]
+                ):
                     return False
                 else:
                     return True
             except KeyError:
                 return True
-        elif response.status_code == 200 and not dup:
+        elif response.status_code == 200 and not dup:  # l match
             return True
         else:
             return False
@@ -262,19 +278,6 @@ class watcher:
         Returns:
             dict: live_match data
         """
-        # response = self.search_summoner(guild, summonerName)
-        # if response.status_code != 200:
-        #     if response.status_code == 404 and not lt:
-        #         return "`ERROR! 등록되지 않은 소환사입니다. : " + summonerName + "`"
-        #     elif response.status_code == 404 and lt:
-        #         self.edit_summoner_list(guild.id, False, summonerName)
-        #         return "`Live-tracker 오류 발생\n\
-        #             소환사 [{}]의 닉네임이 변경되었거나 오류가 발생했습니다.\n\
-        #             [!l add 소환사명] 명령어를 이용하여 다시 등록하시기 바랍니다.`".format(
-        #             summonerName
-        #         )
-        #     else:
-        #         return
 
         url = "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
             self.guild_region[guild.id], match
