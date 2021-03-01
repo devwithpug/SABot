@@ -218,9 +218,9 @@ class watcher:
                     )
                 )
                 self.live_game_id[guild.id].remove(game)
-                self.ended_game_temp(guild, game)
+                self.add_ended_game_temp(guild, game)
 
-    def ended_game_temp(self, guild, matchId):
+    def add_ended_game_temp(self, guild, matchId):
         try:
             self.ended_game_temp[guild.id].append(matchId)
         except KeyError:
