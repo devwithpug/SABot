@@ -15,7 +15,7 @@ class sabot:
         t.close()
 
         # Bot Settings
-        self.game = discord.Game("희동이랑 떨")
+        self.game = discord.Game("Online")
         self.prefix = "!"
         self.wt = watcher.watcher()
         self.lt = {}
