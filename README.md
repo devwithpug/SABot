@@ -26,12 +26,12 @@
 
 ## How to set up your own bot:
 
-####You need to install python packages with pip:
+#### You need to install python packages with pip:
 ```
 discord.py, asyncio, Pillow, pymongo, pandas
 ```
 
-####And, you need to create token files:
+#### And, you need to create token files:
 
 Discord token file : `.token` in your directory with `SABot.py`
 

@@ -215,7 +215,7 @@ async def l(ctx, *args):
                 description="데이터 불러오는 중...",
                 colour=discord.Colour.green(),
             )
-            await ctx.send(embed=embed, delete_after=1.0)
+            await ctx.send(embed=embed, delete_after=0.5)
 
             # match found
             content = setup.wt.load_live_match_data(
@@ -303,13 +303,15 @@ async def l(ctx, *args):
 
 @tasks.loop(seconds=60.0)
 async def live_game_tracker():
+    # There is possibility of some errors during API requests.
     if setup.wt.riot_api_status() == 403:
         print(
-            "[{}] [Live_game_tracker] error 403 Forbidden : Check your riot_api_key !!!".format(
+            "[{}] [Live_game_tracker] ERROR 403 Forbidden : Riot API token key was expired or It might be Riot API server error.".format(
                 time.strftime("%c", time.localtime(time.time()))
             )
         )
-
+        return
+        """
         for guild in bot.guilds:
             await guild.system_channel.send(
                 embed=discord.Embed(
@@ -329,7 +331,7 @@ async def live_game_tracker():
             )
         )
         return
-
+        """
     setup.wt.update_ddragon_data()
 
     for guild in bot.guilds:
