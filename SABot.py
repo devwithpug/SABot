@@ -1,5 +1,5 @@
 import discord, asyncio, os, time
-import watcher
+import watcher, utils
 from PIL import Image
 from io import BytesIO
 from discord.ext import commands, tasks
@@ -76,14 +76,6 @@ async def on_guild_remove(guild):
 
 # Bot commands
 
-
-@bot.command()
-async def debug_leave_all_guilds(ctx):
-    if ctx.author.id == 279204767472025600:
-        for guild in bot.guilds:
-            await guild.leave()
-
-
 @bot.command()
 async def command(ctx):
     print(
@@ -96,7 +88,7 @@ async def command(ctx):
     )
     await ctx.send(
         embed=discord.Embed(
-            title="Check available commands : https://github.com/Jungyu-Choi/SABot"
+            title="Check available commands : https://github.com/devwithpug/SABot"
         )
     )
 
@@ -114,7 +106,7 @@ async def l(ctx, *args):
     if not args:
         await ctx.send(
             embed=discord.Embed(
-                title="Check available commands : https://github.com/Jungyu-Choi/SABot"
+                title="Check available commands : https://github.com/devwithpug/SABot"
             )
         )
         return
@@ -125,21 +117,8 @@ async def l(ctx, *args):
             return m.content == "y" or m.content == "n" and m.channel == ctx.channel
 
         def select_region(m):
-            return (
-                m.content == "br1"
-                or m.content == "eun1"
-                or m.content == "euw1"
-                or m.content == "jp1"
-                or m.content == "kr"
-                or m.content == "la1"
-                or m.content == "la2"
-                or m.content == "la2"
-                or m.content == "na1"
-                or m.content == "oc1"
-                or m.content == "tr1"
-                or m.content == "ru"
-                and m.channel == ctx.channel
-            )
+            regions = ["br1", "eun1", "euw1", "jp1", "kr", "la1", "la2", "na1", "oc1", "tr1", "ru"]
+            return m.content in regions and m.channel == ctx.channel
 
         await ctx.send(
             embed=discord.Embed(
@@ -204,20 +183,24 @@ async def l(ctx, *args):
         return
 
     name = " ".join(args[1:])
+    locale = get_locale(ctx.guild)
 
     if args[0] == "match" and len(args) > 1:
+
         response = setup.wt.search_summoner(ctx.guild, name)
+
+        # match found
         if response.status_code == 200 and setup.wt.search_live_match(
             ctx.guild, response.json()["id"], False
         ):
+
             embed = discord.Embed(
-                title="실시간 매치가 발견되었습니다!",
-                description="데이터 불러오는 중...",
+                title=locale['match_found'],
+                description=locale['loading'],
                 colour=discord.Colour.green(),
             )
             await ctx.send(embed=embed, delete_after=0.5)
 
-            # match found
             content = setup.wt.load_live_match_data(
                 ctx.guild, response.json()["id"], False
             )
@@ -245,13 +228,13 @@ async def l(ctx, *args):
 
         if setup.lt[ctx.guild.id] is True:
             await ctx.send(
-                embed=discord.Embed(title="Live-game tracker is already working.")
+                embed=discord.Embed(title=locale['tracker_started_already'])
             )
             return
         elif setup.wt.riot_api_status() == 403:
             await ctx.send(
                 embed=discord.Embed(
-                    title="Couldn't start Live-game tracker. Invaild Riot API key."
+                    title=locale['tracker_failed']
                 )
             )
             return
@@ -266,12 +249,12 @@ async def l(ctx, *args):
                 time.strftime("%c", time.localtime(time.time())), ctx.guild.name
             )
         )
-        await ctx.send(embed=discord.Embed(title="Live-game tracker was started."))
+        await ctx.send(embed=discord.Embed(title=locale['tracker_started']))
 
     elif args[0] == "stop" and len(args) == 1:
         if setup.lt[ctx.guild.id] is False:
             await ctx.send(
-                embed=discord.Embed(title="Live-game tracker was already stopped.")
+                embed=discord.Embed(title=locale['tracker_stopped_already'])
             )
             return
         setup.lt[ctx.guild.id] = False
@@ -280,7 +263,7 @@ async def l(ctx, *args):
                 time.strftime("%c", time.localtime(time.time())), ctx.guild.name
             )
         )
-        await ctx.send(embed=discord.Embed(title="Live-game tracker was stopped."))
+        await ctx.send(embed=discord.Embed(title=locale['tracker_stopped']))
 
     elif args[0] == "list" and len(args) == 1:
         region = setup.wt.guild_region[ctx.guild.id]
@@ -289,14 +272,14 @@ async def l(ctx, *args):
             names += name + "\n"
         await ctx.send(
             embed=discord.Embed(
-                title="Region : " + region, description=names
-            ).set_author(name="Live tracker user list")
+                title=locale['region'] + " : " + region, description=names
+            ).set_author(name=locale['tracker_list'])
         )
 
     else:
         await ctx.send(
             embed=discord.Embed(
-                title="Check available commands : https://github.com/Jungyu-Choi/SABot"
+                title="Check available commands : https://github.com/devwithpug/SABot"
             )
         )
 
@@ -311,41 +294,24 @@ async def live_game_tracker():
             )
         )
         return
-        """
-        for guild in bot.guilds:
-            await guild.system_channel.send(
-                embed=discord.Embed(
-                    title="Riot API has expired. Live-game tracker will stopped until fixes."
-                )
-            )
-            await guild.system_channel.send(
-                embed=discord.Embed(title="Live-game tracker was stopped.")
-            )
-            setup.lt[guild.id] = False
 
-        live_game_tracker.stop()
-
-        print(
-            "[{}] [Live_game_tracker] live_game_tracker was stopped. ".format(
-                time.strftime("%c", time.localtime(time.time()))
-            )
-        )
-        return
-        """
     setup.wt.update_ddragon_data()
 
     for guild in bot.guilds:
         if setup.lt[guild.id] is False:
             continue
+        
         setup.wt.remove_ended_match(guild)
+        locale = get_locale(guild)
+
         for summonerName in setup.wt.get_summoner_list(guild.id):
             response = setup.wt.search_summoner(guild, summonerName)
             if response.status_code == 200 and setup.wt.search_live_match(
                 guild, response.json()["id"]
             ):
                 embed = discord.Embed(
-                    title="실시간 매치가 발견되었습니다!",
-                    description="데이터 불러오는 중...",
+                    title=locale['match_found'],
+                    description=locale['loading'],
                     colour=discord.Colour.green(),
                 )
                 await guild.system_channel.send(embed=embed, delete_after=1.0)
@@ -379,6 +345,17 @@ def preview_current_game(name, guild, lt=True):
             return ["403", content]
         else:
             return
+
+
+def get_locale(guild):
+    config = utils.get_config()
+    locale = config.locale['en']
+    region = setup.wt.get_guild_region(guild)
+
+    if region in config.locale:
+        locale = config.locale[region]
+
+    return locale
 
 
 bot.run(setup.token)

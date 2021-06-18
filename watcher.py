@@ -3,7 +3,7 @@ import pandas as pd
 import os, time, requests
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
-
+import utils
 
 class watcher:
     def __init__(self):
@@ -148,6 +148,10 @@ class watcher:
         Returns:
             str: Operation result
         """
+    
+        region = self.guild_region[guild_id]
+        locale = self.get_locale(region)    
+
         if add:
             url = "https://{}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{}".format(
                 self.guild_region[guild_id], summonerName
@@ -155,12 +159,12 @@ class watcher:
             response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
             if response.status_code != 200:
                 if response.status_code == 404:
-                    return "등록되지 않은 소환사입니다. 오타를 확인 해주세요."
+                    return locale['invalid_summoner_name']
                 else:
-                    return "ERROR OCCURED"
+                    return locale['error']
 
             if summonerName in self.user_list[guild_id]:
-                return "이미 등록된 소환사 입니다."
+                return locale['exists_summoner_name']
             else:
                 try:
                     self.user.insert_one(
@@ -168,27 +172,26 @@ class watcher:
                     )
                 except Exception as err:
                     print(err)
-                    return "DB ERROR"
+                    return locale['db_error']
                 self.user_list[guild_id].append(summonerName)
                 print(
                     summonerName
                     + " Added at "
                     + time.strftime("%c", time.localtime(time.time()))
                 )
-                return "등록 성공"
+                return locale['success_added']
         elif not add:
             try:
                 self.user_list[guild_id].remove(summonerName)
             except ValueError:
-                print("Error : SummonerName is not in the list \n")
-                return "목록에 없는 소환사입니다. !l list를 입력하여 확인하세요."
+                return locale['summoner_not_in_list']
             self.user.delete_one({"guild_id": guild_id, "user_name": summonerName})
             print(
                 summonerName
                 + " Removed at "
                 + time.strftime("%c", time.localtime(time.time()))
             )
-            return "삭제 성공"
+            return locale['success_removed']
 
     def riot_api_status(self):
         url = "https://kr.api.riotgames.com/lol/status/v4/platform-data"
@@ -246,6 +249,17 @@ class watcher:
         response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
         return response
 
+    def get_guild_region(self, guild):
+        return self.guild_region[guild.id]
+
+    def get_locale(self, region):
+        config = utils.get_config()
+        locale = config.locale['en']
+
+        if region in config.locale:
+            locale = config.locale[region]
+        return locale
+
     def search_live_match(self, guild, summonerId, dup=True):
         url = "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
             self.guild_region[guild.id], summonerId
@@ -278,6 +292,9 @@ class watcher:
         Returns:
             dict: live_match data
         """
+
+        region = self.guild_region[guild.id]
+        locale = self.get_locale(region)
 
         url = "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
             self.guild_region[guild.id], match
@@ -411,9 +428,9 @@ class watcher:
         df = pd.DataFrame(participants)
         print(df)
 
-        return self.matchWrapper(self.latest, data[0], data[1])
+        return self.matchWrapper(self.latest, data[0], data[1], locale)
 
-    def matchWrapper(self, latest, match, participants):
+    def matchWrapper(self, latest, match, participants, locale):
         # background
         lineX = 1920
         lineY = 100
@@ -449,14 +466,14 @@ class watcher:
             font=font,
             fill=(0, 0, 0),
         )
-        d.text((10, 110), "Blue Team", font=font, fill=(0, 0, 0))
-        d.text((10, 710), "Red Team", font=font, fill=(0, 0, 0))
+        d.text((10, 110), locale['blue_team'], font=font, fill=(0, 0, 0))
+        d.text((10, 710), locale['red_team'], font=font, fill=(0, 0, 0))
         for y in range(110, 711, 600):
-            d.text((310, y), "Name", font=font, fill=(0, 0, 0))
-            d.text((810, y), "Tier", font=font, fill=(0, 0, 0))
-            d.text((1380, y), "Ratio", font=font, fill=(0, 0, 0))
-            d.text((1580, y), "Wins", font=font, fill=(0, 0, 0))
-            d.text((1720, y), "Losses", font=font, fill=(0, 0, 0))
+            d.text((310, y), locale['name'], font=font, fill=(0, 0, 0))
+            d.text((810, y), locale['tier'], font=font, fill=(0, 0, 0))
+            d.text((1380, y), locale['ratio'], font=font, fill=(0, 0, 0))
+            d.text((1580, y), locale['wins'], font=font, fill=(0, 0, 0))
+            d.text((1720, y), locale['losses'], font=font, fill=(0, 0, 0))
         # participants
         initial_y = 210
 
