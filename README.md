@@ -50,8 +50,8 @@ You can modify the file `locale.yaml` to make changes easily.
 
 For information such as game modes and maps, check the link below provided by Riot Games.
 
-[gameModes.json](https://static.developer.riotgames.com/docs/lol/gameModes.json){:target="_blank"}
-[maps.json](https://static.developer.riotgames.com/docs/lol/maps.json){:target="_blank"}
+[gameModes.json](https://static.developer.riotgames.com/docs/lol/gameModes.json)
+[maps.json](https://static.developer.riotgames.com/docs/lol/maps.json)
 
 ```yaml
 locale: {
@@ -86,5 +86,5 @@ locale: {
 
 
 # API Reference:
-* `discord.py` (https://github.com/Rapptz/discord.py){:target="_blank"}
-* `Riot API` (https://developer.riotgames.com/apis){:target="_blank"}
+* `discord.py` (https://github.com/Rapptz/discord.py)
+* `Riot API` (https://developer.riotgames.com/apis)
