@@ -44,8 +44,47 @@ Finally,
 
 Run `SABot.py` and type `!l setup` to your Discord server.
 
+## How to localization:
+
+You can modify the file `locale.yaml` to make changes easily.
+
+For information such as game modes and maps, check the link below provided by Riot Games.
+
+[gameModes.json](https://static.developer.riotgames.com/docs/lol/gameModes.json){:target="_blank"}
+[maps.json](https://static.developer.riotgames.com/docs/lol/maps.json){:target="_blank"}
+
+```yaml
+locale: {
+  en: {
+    tracker_failed: Couldn't start Live-game tracker. Invaild Riot API key.,
+    tracker_started: Live-game tracker was started.,
+    tracker_stopped: Live-game tracker was stopped.,
+    tracker_started_already: Live-game tracker is already working.,
+    tracker_stopped_already: Live-game tracker was already stopped.,
+    region: Region,
+    tracker_list: Live-game tracker Summoner List,
+    match_found: New match has been found!,
+    loading: Loading data...,
+
+    blue_team: Blue Team,
+    red_team: Red Team,
+    name: Name,
+    tier: Tier,
+    ratio: Ratio,
+    wins:  Wins,
+    losses: Losses,
+
+    invalid_summoner_name: This summoner is not registered. Please check spelling.,
+    exists_summoner_name: This summoner was already added in your channel.,
+    error: Error occured!,
+    db_error: Database Error Occurred.,
+    success_added: Summoner have successfully registered.,
+    success_removed: Summoner have successfully removed.,
+    summoner_not_in_list: Summoner not listed. Enter `!l list` to confirm.,
+  },
+```
 
 
-## API Reference:
-* `discord.py` (https://github.com/Rapptz/discord.py)
-* `Riot API` (https://developer.riotgames.com/apis)
+# API Reference:
+* `discord.py` (https://github.com/Rapptz/discord.py){:target="_blank"}
+* `Riot API` (https://developer.riotgames.com/apis){:target="_blank"}
