@@ -1,5 +1,8 @@
 locale: {
   en: {
+    queues: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/queues.json,
+    maps: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/maps.json,
+
     tracker_failed: Couldn't start Live-game tracker. Invaild Riot API key.,
     tracker_started: Live-game tracker was started.,
     tracker_stopped: Live-game tracker was stopped.,
@@ -28,6 +31,9 @@ locale: {
   },
 
   kr: {
+    queues: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/ko_kr/v1/queues.json,
+    maps: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/ko_kr/v1/maps.json,
+
     tracker_failed: 실시간 매치 트래커 시작 실패. Riot API key를 확인해주세요.,
     tracker_started: 실시간 매치 트래커가 시작되었습니다.,
     tracker_stopped: 실시간 매치 트래커가 종료되었습니다.,

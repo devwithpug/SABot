@@ -1,9 +1,7 @@
 from pymongo.mongo_client import MongoClient
 import pandas as pd
 import os, time, requests
-from PIL import Image, ImageDraw, ImageFont
-from io import BytesIO
-import utils
+import utils, wrapper
 
 class watcher:
     def __init__(self):
@@ -21,19 +19,6 @@ class watcher:
         print("[mongoDB]", self.cluster)
 
         self.guild_region = {}
-        self.locale_dict = {
-            "br1": "pt_BR",
-            "eun1": "en_GB",
-            "euw1": "en_GB",
-            "jp1": "ja_JP",
-            "kr": "ko_KR",
-            "la1": "es_MX",
-            "la2": "es_AR",
-            "na1": "en_US",
-            "oc1": "en_AU",
-            "tr1": "tr_TR",
-            "ru": "ru_RU",
-        }
         self.db = MongoClient(self.cluster).get_database("sabot")
         self.guild = self.db["Guild"]
         self.user = self.db["User"]
@@ -53,9 +38,6 @@ class watcher:
     def update_ddragon_data(self):
         url = "https://ddragon.leagueoflegends.com/realms/kr.json"
         self.latest = requests.get(url).json()
-        self.queues = requests.get(
-            "http://static.developer.riotgames.com/docs/lol/queues.json"
-        ).json()
         if self.champ_version is None:
             print(
                 "[{}][Live_game_tracker]Data Dragon v{} loaded".format(
@@ -297,17 +279,20 @@ class watcher:
         locale = self.get_locale(region)
 
         url = "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
-            self.guild_region[guild.id], match
+            region, match
         )
         response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
         if response.status_code != 200:
             return
         elif response.status_code == 404:
             return
+
+        queues = requests.get(locale['queues']).json()
+        maps = requests.get(locale['maps']).json()
+        
         match = response.json()
 
-        data = []
-        match_data = {}
+        data = {}
 
         if lt:
             try:
@@ -341,218 +326,18 @@ class watcher:
                     )
                 )
 
-        match_data["gameId"] = match["gameId"]
-        match_data["gameType"] = match["gameType"]
-        match_data["mapId"] = match["mapId"]
-        match_data["gameLength"] = match["gameLength"]
+        data['match_data'] = wrapper.get_match_data(match, queues, maps)
+        data['participants'] = wrapper.get_participants(match, self.static_champ_list, self.static_spell_list)
 
-        try:
-            for queues in self.queues:
-                if queues["queueId"] == match["gameQueueConfigId"]:
-                    match_data["map"] = queues["map"]
-                    match_data["gameMode"] = queues["description"]
-        except KeyError:
-            match_data["map"] = match["gameMode"]
-            match_data["gameMode"] = match["gameType"]
-
-        data.append(match_data)
-
-        participants = []
-        for row in match["participants"]:
-            participants_row = {}
-            participants_row["championId"] = row["championId"]
-            participants_row["summonerName"] = row["summonerName"]
-            participants_row["summonerId"] = row["summonerId"]
-            participants_row["sp1"] = row["spell1Id"]
-            participants_row["sp2"] = row["spell2Id"]
-            participants.append(participants_row)
-        champ_dict = {}
-        spell_dict = {}
-        for champ in self.static_champ_list["data"]:
-            row = self.static_champ_list["data"][champ]
-            champ_dict[row["key"]] = row["id"]
-        for spell in self.static_spell_list["data"]:
-            row = self.static_spell_list["data"][spell]
-            spell_dict[row["key"]] = row["id"]
-        for row in participants:
-            try:
-                row["championId"] = champ_dict[str(row["championId"])]
-            except KeyError:
-                row["championId"] = "NULL"
-            row["sp1"] = spell_dict[str(row["sp1"])]
-            row["sp2"] = spell_dict[str(row["sp2"])]
-        data.append(participants)
-
-        for participant, i in zip(data[1], range(10)):
+        for i, participant in zip(range(10), data['participants']):
             url = "https://{}.api.riotgames.com/lol/league/v4/entries/by-summoner/{}".format(
-                self.guild_region[guild.id], participant["summonerId"]
+                region, participant["summonerId"]
             )
             row = requests.get(url, headers={"X-Riot-Token": self.riot_api_key}).json()
 
-            if len(row) != 0:
-                ranked_solo_index = 0
-                for league in row:
-                    if league["queueType"] == "RANKED_SOLO_5x5":
-                        break
-                    else:
-                        ranked_solo_index += 1
-                try:
-                    row[ranked_solo_index]
-                except IndexError:
-                    participants[i]["tier"] = "unranked"
-                    participants[i]["rank"] = ""
-                    participants[i]["wins"] = ""
-                    participants[i]["losses"] = ""
-                    participants[i]["avarage"] = ""
-                    continue
-                participants[i]["tier"] = row[ranked_solo_index]["tier"]
-                participants[i]["rank"] = row[ranked_solo_index]["rank"]
-                participants[i]["wins"] = row[ranked_solo_index]["wins"]
-                participants[i]["losses"] = row[ranked_solo_index]["losses"]
-                participants[i]["avarage"] = round(
-                    row[ranked_solo_index]["wins"]
-                    / (
-                        row[ranked_solo_index]["wins"]
-                        + row[ranked_solo_index]["losses"]
-                    )
-                    * 100,
-                    2,
-                )
-            else:
-                participants[i]["tier"] = "unranked"
-                participants[i]["rank"] = ""
-                participants[i]["wins"] = ""
-                participants[i]["losses"] = ""
-                participants[i]["avarage"] = ""
+            wrapper.update_participants(i, data['participants'], row)
 
-        df = pd.DataFrame(participants)
+        df = pd.DataFrame(data['participants'])
         print(df)
 
-        return self.matchWrapper(self.latest, data[0], data[1], locale)
-
-    def matchWrapper(self, latest, match, participants, locale):
-        # background
-        lineX = 1920
-        lineY = 100
-
-        try:
-            font = ImageFont.truetype("NanumGothic.ttf", 50)
-        except OSError:
-            try:
-                font = ImageFont.truetype("arial.ttf", 50)  # Window default font
-            except OSError:
-                font = ImageFont.truetype(
-                    "AppleSDGothicNeo.ttc", 50
-                )  # MacOS default font
-
-        im = Image.new("RGBA", (lineX, lineY * 13), (255, 255, 255))
-        d = ImageDraw.Draw(im)
-        line = Image.new("RGB", (lineX, lineY), (230, 230, 230))
-        for i in range(0, 13):
-            if i % 2 == 0:
-                im.paste(line, (0, i * lineY))
-            elif i == 1:
-                im.paste(
-                    Image.new("RGB", (lineX, lineY), (85, 85, 255)), (0, i * lineY)
-                )
-            elif i == 7:
-                im.paste(
-                    Image.new("RGB", (lineX, lineY), (255, 70, 70)), (0, i * lineY)
-                )
-        # match
-        d.text(
-            (10, 10),
-            match["map"] + " | " + match["gameMode"],
-            font=font,
-            fill=(0, 0, 0),
-        )
-        d.text((10, 110), locale['blue_team'], font=font, fill=(0, 0, 0))
-        d.text((10, 710), locale['red_team'], font=font, fill=(0, 0, 0))
-        for y in range(110, 711, 600):
-            d.text((310, y), locale['name'], font=font, fill=(0, 0, 0))
-            d.text((810, y), locale['tier'], font=font, fill=(0, 0, 0))
-            d.text((1380, y), locale['ratio'], font=font, fill=(0, 0, 0))
-            d.text((1580, y), locale['wins'], font=font, fill=(0, 0, 0))
-            d.text((1720, y), locale['losses'], font=font, fill=(0, 0, 0))
-        # participants
-        initial_y = 210
-
-        for data, i in zip(participants, range(1, 11)):
-            im.paste(
-                im=self.getImage(
-                    latest["n"]["champion"], "champion", data["championId"]
-                ),
-                box=(10, initial_y),
-            )
-            im.paste(
-                im=self.getImage(latest["v"], "spell", data["sp1"]),
-                box=(110, initial_y),
-            )
-            im.paste(
-                im=self.getImage(latest["v"], "spell", data["sp2"]),
-                box=(210, initial_y),
-            )
-            d.text((310, initial_y), data["summonerName"], font=font, fill=(0, 0, 0))
-            if data["tier"] != "unranked":
-                tier_image = self.getImage(latest["v"], "tier", data["tier"])
-                im.paste(tier_image, (810, initial_y), tier_image)
-            d.text(
-                (950, initial_y),
-                data["tier"] + " " + data["rank"],
-                font=font,
-                fill=(0, 0, 0),
-            )
-            if type(data["avarage"]) is float:
-                d.text(
-                    (1380, initial_y),
-                    str(data["avarage"]) + "%",
-                    font=font,
-                    fill=(0, 0, 0),
-                )
-            d.text((1580, initial_y), str(data["wins"]), font=font, fill=(0, 0, 0))
-            d.text((1720, initial_y), str(data["losses"]), font=font, fill=(0, 0, 0))
-
-            if i == 5:
-                initial_y += 200
-            else:
-                initial_y += 100
-
-        return im
-
-    def getImage(self, version, type, name):
-        if type == "champion":
-            url = (
-                "https://ddragon.leagueoflegends.com/cdn/"
-                + version
-                + "/img/champion/"
-                + name
-                + ".png"
-            )
-            response = requests.get(url)
-            if response.status_code != 200:
-                img = Image.new("RGB", (80, 80))
-            else:
-                img = Image.open(BytesIO(response.content))
-                img = img.resize((80, 80))
-            return img
-
-        elif type == "spell":
-            url = (
-                "https://ddragon.leagueoflegends.com/cdn/"
-                + version
-                + "/img/spell/"
-                + name
-                + ".png"
-            )
-            response = requests.get(url)
-            if response.status_code != 200:
-                img = Image.new("RGB", (80, 80))
-            else:
-                img = Image.open(BytesIO(response.content))
-                img = img.resize((80, 80))
-            return img
-
-        elif type == "tier":
-            img = Image.open("./assets/" + name + ".png")
-            img = img.resize((80, 80))
-            return img
+        return wrapper.draw_image(self.latest, data, locale)

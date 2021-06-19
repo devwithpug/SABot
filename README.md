@@ -28,7 +28,7 @@
 
 #### You need to install python packages with pip:
 ```
-discord.py, asyncio, Pillow, pymongo, pandas
+discord.py, asyncio, Pillow, pymongo, pandas, yaml
 ```
 
 #### And, you need to create token files:
@@ -48,14 +48,16 @@ Run `SABot.py` and type `!l setup` to your Discord server.
 
 You can modify the file `locale.yaml` to make changes easily.
 
-For information such as game modes and maps, check the link below provided by Riot Games.
+For information such as game modes and maps, check the link below provided by CDragon and modify `queues` and `maps`.
 
-[gameModes.json](https://static.developer.riotgames.com/docs/lol/gameModes.json)
-[maps.json](https://static.developer.riotgames.com/docs/lol/maps.json)
+(https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/)
 
 ```yaml
 locale: {
   en: {
+    queues: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/queues.json,
+    maps: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/maps.json,
+
     tracker_failed: Couldn't start Live-game tracker. Invaild Riot API key.,
     tracker_started: Live-game tracker was started.,
     tracker_stopped: Live-game tracker was stopped.,

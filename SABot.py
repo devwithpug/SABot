@@ -358,4 +358,6 @@ def get_locale(guild):
     return locale
 
 
-bot.run(setup.token)
+if __name__ == "__main__":
+    
+    bot.run(setup.token)
