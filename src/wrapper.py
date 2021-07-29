@@ -90,7 +90,7 @@ def update_participants(i, participants, row):
         participants[i]["avarage"] = ""
 
 
-def draw_image(latest, data, locale):
+def draw_image(latest, data, locale, font_name=None):
 
     match = data['match_data']
     participants = data['participants']
@@ -99,15 +99,18 @@ def draw_image(latest, data, locale):
     lineX = 1920
     lineY = 100
 
-    try:
-        font = ImageFont.truetype("NanumGothic.ttf", 50)
-    except OSError:
+    if font_name is not None:
+        font = ImageFont.truetype(font_name, 50)
+    else:
         try:
-            font = ImageFont.truetype("arial.ttf", 50)  # Window default font
+            font = ImageFont.truetype("DejaVuSans.ttf", 50) # Ubuntu 18.04
         except OSError:
-            font = ImageFont.truetype(
-                "AppleSDGothicNeo.ttc", 50
-            )  # MacOS default font
+            try:
+                font = ImageFont.truetype("arial.ttf", 50)  # Windows
+            except OSError:
+                font = ImageFont.truetype(
+                    "AppleSDGothicNeo.ttc", 50
+                )  # MacOS
 
     im = Image.new("RGBA", (lineX, lineY * 13), (255, 255, 255))
     d = ImageDraw.Draw(im)

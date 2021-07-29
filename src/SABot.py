@@ -9,7 +9,7 @@ class sabot:
     def __init__(self):
         
         # Get Token
-        self.token = utils.get_config()['bot_token_key']
+        self.token = utils.get_config().credentials['bot_token_key']
         log("bot_token_key : {}".format(self.token[:4]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.token[4:])))
 
         # Bot Settings
