@@ -3,7 +3,7 @@ import watcher, utils
 from PIL import Image
 from io import BytesIO
 from discord.ext import commands, tasks
-
+from utils import log, logErr
 
 class sabot:
     def __init__(self):
@@ -11,7 +11,7 @@ class sabot:
         self.token_path = os.path.dirname(os.path.abspath(__file__)) + "/.token"
         with open(self.token_path, "r", encoding="utf-8") as t:
             self.token = t.read().split()[0]
-        print("Token_Key : ", self.token)
+        log("bot_token_key : {}".format(self.token[:4]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.token[4:])))
         t.close()
 
         # Bot Settings
@@ -31,8 +31,10 @@ bot = commands.Bot(
 
 @bot.event
 async def on_ready():
-    print("We have logged in as {0.user}".format(bot))
-    print("Guild List : {}".format(str(bot.guilds)))
+    
+    log("We have logged in as {}".format(bot.user))
+    log("Guild List : {}".format(str(bot.guilds)))
+    
     setup.wt.load_summoner_list(bot.guilds)
     for guild in bot.guilds:
         setup.lt[guild.id] = True
@@ -41,36 +43,35 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    print(
-        "[{}]SAbot joined at {} ({})".format(
-            time.strftime("%c", time.localtime(time.time())), guild.name, guild.id
-        )
-    )
+    
+    log("SABot joined new guild.", guild)
+    
     setup.wt.load_summoner_list(bot.guilds)
     setup.lt[guild.id] = False
+
     try:
         await guild.system_channel.send(
             embed=discord.Embed(title="SABot is now ONLINE =D")
         )
     except discord.errors.Forbidden:
-        print("(error code: 50013): Missing Permissions")
+        logErr("(error code: 50013): Missing Permissions", guild)
         await guild.leave()
         return
-    print("[Live_game_tracker]Restart live_game_tracker")
+
+    log("Restart live_game_tracker", guild)
     live_game_tracker.restart()
 
 
 @bot.event
 async def on_guild_remove(guild):
-    print(
-        "[{}]SAbot removed at {} ({})".format(
-            time.strftime("%c", time.localtime(time.time())), guild.name, guild.id
-        )
-    )
+    
+    log("SABot was removed on this guild.", guild)
+    
     setup.wt.delete_guild(guild.id)
     setup.wt.load_summoner_list(bot.guilds)
     del setup.lt[guild.id]
-    print("[Live_game_tracker]Restart live_game_tracker")
+    
+    log("Restart live_game_tracker", guild)
     live_game_tracker.restart()
 
 
@@ -78,14 +79,9 @@ async def on_guild_remove(guild):
 
 @bot.command()
 async def command(ctx):
-    print(
-        "[{}, {}] {} : {}".format(
-            time.strftime("%c", time.localtime(time.time())),
-            ctx.guild.name,
-            ctx.author,
-            ctx.message.content,
-        )
-    )
+
+    log("{0.author} : {0.message.content}".format(ctx), ctx.guild)
+
     await ctx.send(
         embed=discord.Embed(
             title="Check available commands : https://github.com/devwithpug/SABot"
@@ -95,14 +91,9 @@ async def command(ctx):
 
 @bot.command()
 async def l(ctx, *args):
-    print(
-        "[{}, {}] {} : {}".format(
-            time.strftime("%c", time.localtime(time.time())),
-            ctx.guild.name,
-            ctx.author,
-            ctx.message.content,
-        )
-    )
+
+    log("{0.author} : {0.message.content}".format(ctx), ctx.guild)
+
     if not args:
         await ctx.send(
             embed=discord.Embed(
@@ -216,11 +207,11 @@ async def l(ctx, *args):
                 await ctx.send(content=content)
 
     elif args[0] == "add" and len(args) > 1:
-        d = setup.wt.edit_summoner_list(ctx.guild.id, True, name)
+        d = setup.wt.edit_summoner_list(ctx.guild, True, name)
         await ctx.send(embed=discord.Embed(title=d))
 
     elif args[0] == "remove" and len(args) > 1:
-        d = setup.wt.edit_summoner_list(ctx.guild.id, False, name)
+        d = setup.wt.edit_summoner_list(ctx.guild, False, name)
         await ctx.send(embed=discord.Embed(title=d))
 
     elif args[0] == "start" and len(args) == 1:
@@ -244,11 +235,9 @@ async def l(ctx, *args):
             live_game_tracker.restart()
 
         setup.lt[ctx.guild.id] = True
-        print(
-            "[{}] [Live_game_tracker] {} live_game_tracker was started. ".format(
-                time.strftime("%c", time.localtime(time.time())), ctx.guild.name
-            )
-        )
+
+        log("live_game_tracker was started", ctx.guild)
+        
         await ctx.send(embed=discord.Embed(title=locale['tracker_started']))
 
     elif args[0] == "stop" and len(args) == 1:
@@ -258,11 +247,9 @@ async def l(ctx, *args):
             )
             return
         setup.lt[ctx.guild.id] = False
-        print(
-            "[{}] [Live_game_tracker] {} live_game_tracker was stopped. ".format(
-                time.strftime("%c", time.localtime(time.time())), ctx.guild.name
-            )
-        )
+
+        log("live_game_tracker was stopped", ctx.guild)
+
         await ctx.send(embed=discord.Embed(title=locale['tracker_stopped']))
 
     elif args[0] == "list" and len(args) == 1:
@@ -288,11 +275,7 @@ async def l(ctx, *args):
 async def live_game_tracker():
     # There is possibility of some errors during API requests.
     if setup.wt.riot_api_status() == 403:
-        print(
-            "[{}] [Live_game_tracker] ERROR 403 Forbidden : Riot API token key was expired or It might be Riot API server error.".format(
-                time.strftime("%c", time.localtime(time.time()))
-            )
-        )
+        logErr("403 Forbidden, Riot API token key was expired or It might be Riot API server error")
         return
 
     setup.wt.update_ddragon_data()

@@ -2,6 +2,7 @@ from pymongo.mongo_client import MongoClient
 import pandas as pd
 import os, time, requests
 import utils, wrapper
+from utils import log, logErr
 
 class watcher:
     def __init__(self):
@@ -11,12 +12,12 @@ class watcher:
         # Get riot_api_key
         with open(".riot_api_key", "r", encoding="utf-8") as t:
             self.riot_api_key = t.readline()
-        print("riot_api_key : ", self.riot_api_key)
+        log("riot_api_key : {}".format(self.riot_api_key[:5]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.riot_api_key[5:])))
 
         # Get mongoDB cluster address
         with open(".mongodb", "r", encoding="utf-8") as t:
             self.cluster = t.read().split()[0]
-        print("[mongoDB]", self.cluster)
+        log("mongoDB cluster : {}".format(self.cluster[:11]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.cluster[11:])))
 
         self.guild_region = {}
         self.db = MongoClient(self.cluster).get_database("sabot")
@@ -30,7 +31,7 @@ class watcher:
     def init_riot_api(self):
         with open(".riot_api_key", "r", encoding="utf-8") as t:
             self.riot_api_key = t.readline()
-        print("Init riot_api_key : ", self.riot_api_key)
+        log("riot_api_key initialized to : {}".format(self.riot_api_key))
 
     def is_setup_already(self, guild):
         return self.guild.count_documents({"_id": guild.id})
@@ -38,23 +39,13 @@ class watcher:
     def update_ddragon_data(self):
         url = "https://ddragon.leagueoflegends.com/realms/kr.json"
         self.latest = requests.get(url).json()
+
         if self.champ_version is None:
-            print(
-                "[{}][Live_game_tracker]Data Dragon v{} loaded".format(
-                    time.strftime("%c", time.localtime(time.time())),
-                    self.latest["n"]["champion"],
-                )
-            )
+            log("Data Dragon v{} loaded".format(self.latest["n"]["champion"]))
             self.champ_version = self.latest["n"]["champion"]
 
         elif self.champ_version != self.latest["n"]["champion"]:
-            print(
-                "[{}][Live_game_tracker]Data Dragon version was updated to {} from {}".format(
-                    time.strftime("%c", time.localtime(time.time())),
-                    self.latest["n"]["champion"],
-                    self.champ_version,
-                )
-            )
+            log("Data Dragon was updated from {} to {}".format(self.champ_version, self.latest['n']['champion']))
             self.champ_version = self.latest["n"]["champion"]
 
         url = (
@@ -81,7 +72,7 @@ class watcher:
             self.guild.delete_one({"_id": guild_id})
             self.user.delete_many({"guild_id": guild_id})
         except Exception as err:
-            print(err)
+            logErr(err)
 
     def load_summoner_list(self, guilds):
         """Create list variable for summoner list and guilds region
@@ -99,7 +90,7 @@ class watcher:
                 self.guild.insert_one(
                     {"_id": guild.id, "guild_name": guild.name, "region": "kr"}
                 )
-                print("new db documents was inserted, id : ", guild.id)
+                log("new db documents was inserted", guild)
 
             self.guild_region[guild.id] = self.guild.find_one({"_id": guild.id})[
                 "region"
@@ -119,7 +110,7 @@ class watcher:
         """
         return self.user_list[guild_id]
 
-    def edit_summoner_list(self, guild_id, add, summonerName):
+    def edit_summoner_list(self, guild, add, summonerName):
         """Operation that add or remove summonerName in summoner_list
 
         Args:
@@ -131,12 +122,12 @@ class watcher:
             str: Operation result
         """
     
-        region = self.guild_region[guild_id]
+        region = self.guild_region[guild.id]
         locale = self.get_locale(region)    
 
         if add:
             url = "https://{}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{}".format(
-                self.guild_region[guild_id], summonerName
+                self.guild_region[guild.id], summonerName
             )
             response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
             if response.status_code != 200:
@@ -145,34 +136,29 @@ class watcher:
                 else:
                     return locale['error']
 
-            if summonerName in self.user_list[guild_id]:
+            if summonerName in self.user_list[guild.id]:
                 return locale['exists_summoner_name']
             else:
                 try:
                     self.user.insert_one(
-                        {"guild_id": guild_id, "user_name": summonerName}
+                        {"guild_id": guild.id, "user_name": summonerName}
                     )
                 except Exception as err:
-                    print(err)
+                    logErr(err)
                     return locale['db_error']
-                self.user_list[guild_id].append(summonerName)
-                print(
-                    summonerName
-                    + " Added at "
-                    + time.strftime("%c", time.localtime(time.time()))
-                )
+                self.user_list[guild.id].append(summonerName)
+                log("New summoner was added : {}".format(summonerName), guild)
+
                 return locale['success_added']
+
         elif not add:
             try:
-                self.user_list[guild_id].remove(summonerName)
+                self.user_list[guild.id].remove(summonerName)
             except ValueError:
                 return locale['summoner_not_in_list']
-            self.user.delete_one({"guild_id": guild_id, "user_name": summonerName})
-            print(
-                summonerName
-                + " Removed at "
-                + time.strftime("%c", time.localtime(time.time()))
-            )
+            self.user.delete_one({"guild_id": guild.id, "user_name": summonerName})
+            log("Summoner was removed : {}".format(summonerName), guild)
+            
             return locale['success_removed']
 
     def riot_api_status(self):
@@ -192,16 +178,12 @@ class watcher:
             return
 
         matches = self.live_game_id[guild.id]
+
         for game in matches:
             response = self.is_match_ended(guild, game)
+
             if response.status_code == 200:
-                print(
-                    "[{}][Live_game_tracker][{}]Live game ended : {}".format(
-                        time.strftime("%c", time.localtime(time.time())),
-                        guild.name,
-                        game,
-                    )
-                )
+                log("Live game was ended : {}".format(game), guild)
                 self.live_game_id[guild.id].remove(game)
                 self.add_ended_game_temp(guild, game)
 
@@ -311,20 +293,8 @@ class watcher:
 
                 self.live_game_id[guild.id].append(match["gameId"])
 
-                print(
-                    "[{}][Live_game_tracker][{}]New live game added : {}".format(
-                        time.strftime("%c", time.localtime(time.time())),
-                        guild.name,
-                        match["gameId"],
-                    )
-                )
-                print(
-                    "[{}][Live_game_tracker][{}]Current tracking live_game_id list : {}".format(
-                        time.strftime("%c", time.localtime(time.time())),
-                        guild.name,
-                        str(self.live_game_id[guild.id]),
-                    )
-                )
+                log("New live match was added : {}".format(match["gameId"]), guild)
+                log("Current tracking match list : {}".format(str(self.live_game_id[guild.id])), guild)
 
         data['match_data'] = wrapper.get_match_data(match, queues, maps)
         data['participants'] = wrapper.get_participants(match, self.static_champ_list, self.static_spell_list)
