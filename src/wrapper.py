@@ -203,6 +203,6 @@ def get_image(version, type, name):
         return img
 
     elif type == "tier":
-        img = Image.open("./assets/" + name + ".png")
+        img = Image.open("../assets/" + name + ".png")
         img = img.resize((80, 80))
         return img
