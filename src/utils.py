@@ -1,15 +1,22 @@
 import yaml, time
 from types import SimpleNamespace as SN
+import os
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 def get_config():
-    config_dir = '{0}'
+    with open('../config/config.yml', "r") as f:
+        config = yaml.safe_load(f)
 
-    with open(config_dir.format('locale.yaml'), "r") as f:
-        try:
-            config = yaml.safe_load(f)
-        except yaml.YAMLError as exc:
-            assert False, "default.yaml error: {}".format(exc)
+    return SN(**config).credentials
+
+config = get_config()
+
+print(config)
+
+def get_locale_config():
+    with open('../config/locale.yml', "r") as f:
+        config = yaml.safe_load(f)
 
     return SN(**config)
 

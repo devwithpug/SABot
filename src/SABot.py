@@ -1,18 +1,16 @@
-import discord, asyncio, os, time
-import watcher, utils
+import discord, asyncio, os, watcher, utils
 from PIL import Image
 from io import BytesIO
 from discord.ext import commands, tasks
 from utils import log, logErr
 
+
 class sabot:
     def __init__(self):
+        
         # Get Token
-        self.token_path = os.path.dirname(os.path.abspath(__file__)) + "/.token"
-        with open(self.token_path, "r", encoding="utf-8") as t:
-            self.token = t.read().split()[0]
+        self.token = utils.get_config()['bot_token_key']
         log("bot_token_key : {}".format(self.token[:4]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.token[4:])))
-        t.close()
 
         # Bot Settings
         self.game = discord.Game("Online")
@@ -20,7 +18,7 @@ class sabot:
         self.wt = watcher.watcher()
         self.lt = {}
 
-
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 setup = sabot()
 bot = commands.Bot(
     command_prefix=setup.prefix, status=discord.Status.online, activity=setup.game
@@ -331,7 +329,7 @@ def preview_current_game(name, guild, lt=True):
 
 
 def get_locale(guild):
-    config = utils.get_config()
+    config = utils.get_locale_config()
     locale = config.locale['en']
     region = setup.wt.get_guild_region(guild)
 

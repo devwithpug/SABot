@@ -1,8 +1,8 @@
-from pymongo.mongo_client import MongoClient
 import pandas as pd
-import os, time, requests
-import utils, wrapper
+import os, requests, utils, wrapper
+from pymongo.mongo_client import MongoClient
 from utils import log, logErr
+
 
 class watcher:
     def __init__(self):
@@ -10,13 +10,11 @@ class watcher:
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
         # Get riot_api_key
-        with open(".riot_api_key", "r", encoding="utf-8") as t:
-            self.riot_api_key = t.readline()
+        self.riot_api_key = utils.get_config()['riot_api_key']
         log("riot_api_key : {}".format(self.riot_api_key[:5]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.riot_api_key[5:])))
 
         # Get mongoDB cluster address
-        with open(".mongodb", "r", encoding="utf-8") as t:
-            self.cluster = t.read().split()[0]
+        self.cluster = utils.get_config()['mongodb_cluster']
         log("mongoDB cluster : {}".format(self.cluster[:11]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.cluster[11:])))
 
         self.guild_region = {}
@@ -217,7 +215,7 @@ class watcher:
         return self.guild_region[guild.id]
 
     def get_locale(self, region):
-        config = utils.get_config()
+        config = utils.get_locale_config()
         locale = config.locale['en']
 
         if region in config.locale:
