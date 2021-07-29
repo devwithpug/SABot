@@ -21,8 +21,6 @@ class watcher:
         log("mongoDB cluster : {}".format(self.cluster[:11]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.cluster[11:])))
 
         self.font_name = font['name']
-        print("!!")
-        print(self.font_name)
         self.guild_region = {}
         self.db = MongoClient(self.cluster).get_database("sabot")
         self.guild = self.db["Guild"]
