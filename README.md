@@ -32,7 +32,8 @@
 ```json
 discord.py==1.7.3
 pillow==8.0.1
-pymongo==3.11.4
+pymongo==3.12.0
+dnspython==1.16.0
 pandas==1.3.0
 PyYAML==5.4.1
 requests==2.25.1
