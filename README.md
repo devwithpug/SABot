@@ -34,7 +34,7 @@ discord.py==1.7.3
 pillow==8.0.1
 pymongo==3.11.4
 pandas==1.3.0
-yaml==0.2.5
+PyYAML==5.4.1
 requests==2.25.1
 ```
 
