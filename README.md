@@ -26,27 +26,39 @@
 
 ## How to set up your own bot:
 
-#### You need to install python packages with pip:
+### You need to install python packages with pip:
+
+* requirements.txt
 ```
-discord.py, asyncio, Pillow, pymongo, pandas, yaml
+discord.py==1.7.3
+pillow==8.0.1
+pymongo==3.11.4
+pandas==1.3.0
+yaml==0.2.5
+requests==2.25.1
 ```
 
-#### And, you need to create token files:
+* Install via pip
+```bash
+pip install -r requirements.txt
+```
 
-Discord token file : `.token` in your directory with `SABot.py`
+### And, you need to modify `config/config.yml`:
 
-Riot API key file : `.riot_api_key` in your directory with `SABot.py`
+```yml
+credentials:
+  bot_token_key: ODEyXXXXXXXXXXXXXXXXXXXX.XXXXXX.XXXXXXXXXXXXXXXXXXXXXXXXXXX
+  riot_api_key: RGAPI-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+  mongodb_cluster: mongodb+srv://XXXXX:XXXXXX@XXXXXXXX.XXXXX.XXXXXXX.XXX/XXXXXXXX?XXXXXXXXXXX=XXXX&X=XXXXXXXX
+```
 
-mongoDB Cluster Code file : `.mongodb` in your directory with `SABot.py`
->mongodb+srv://admin:(your_db_password)@cluster0.9ycx5.mongodb.net/Cluster0?retryWites=true&w=majority
+### Finally,   
 
-Finally,   
-
-Run `SABot.py` and type `!l setup` to your Discord server.
+Run `src/SABot.py` and type `!l setup` to your Discord server.
 
 ## How to localization:
 
-You can modify the file `locale.yaml` to make changes easily.
+You can modify the file `config/locale.yml` to make changes easily.
 
 For information such as game modes and maps, check the link below provided by CDragon and modify `queues` and `maps`.
 
