@@ -50,6 +50,8 @@ credentials:
   bot_token_key: ODEyXXXXXXXXXXXXXXXXXXXX.XXXXXX.XXXXXXXXXXXXXXXXXXXXXXXXXXX
   riot_api_key: RGAPI-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
   mongodb_cluster: mongodb+srv://XXXXX:XXXXXX@XXXXXXXX.XXXXX.XXXXXXX.XXX/XXXXXXXX?XXXXXXXXXXX=XXXX&X=XXXXXXXX
+font: # if empty, OS default fonts will be selected. (DejaVuSans.ttf, arial.ttf, AppleSDGothicNeo.ttc)
+  name: # your_truetype_font.ttf or ttc
 ```
 
 ### Finally,   
