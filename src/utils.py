@@ -10,10 +10,6 @@ def get_config():
 
     return SN(**config)
 
-config = get_config()
-
-print(config)
-
 def get_locale_config():
     with open('../config/locale.yml', "r") as f:
         config = yaml.safe_load(f)
