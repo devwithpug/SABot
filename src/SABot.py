@@ -48,7 +48,9 @@ async def on_guild_join(guild):
     setup.lt[guild.id] = False
 
     try:
-        await guild.system_channel.send(
+        channel = get_guild_channel(guild)
+
+        await channel.send(
             embed=discord.Embed(title="SABot is now ONLINE =D")
         )
     except discord.errors.Forbidden:
@@ -284,6 +286,7 @@ async def live_game_tracker():
         
         setup.wt.remove_ended_match(guild)
         locale = get_locale(guild)
+        channel = get_guild_channel(guild)
 
         for summonerName in setup.wt.get_summoner_list(guild.id):
             response = setup.wt.search_summoner(guild, summonerName)
@@ -295,7 +298,7 @@ async def live_game_tracker():
                     description=locale['loading'],
                     colour=discord.Colour.green(),
                 )
-                await guild.system_channel.send(embed=embed, delete_after=1.0)
+                await channel.send(embed=embed, delete_after=1.0)
 
                 # match found
                 content = setup.wt.load_live_match_data(guild, response.json()["id"])
@@ -304,11 +307,11 @@ async def live_game_tracker():
                     with BytesIO() as image_binary:
                         content.save(image_binary, "PNG")
                         image_binary.seek(0)
-                        await guild.system_channel.send(
+                        await channel.send(
                             file=discord.File(fp=image_binary, filename="image.png")
                         )
                 elif type(content) is str:
-                    await guild.system_channel.send(content=content)
+                    await channel.send(content=content)
                 else:
                     continue
 
@@ -337,6 +340,13 @@ def get_locale(guild):
         locale = config.locale[region]
 
     return locale
+
+
+def get_guild_channel(guild):
+    if guild.system_channel is None:
+        return guild.text_channels[0]
+    else:
+        return guild.system_channel
 
 
 if __name__ == "__main__":

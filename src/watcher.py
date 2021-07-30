@@ -31,9 +31,9 @@ class watcher:
         self.ended_game_temp = {}
 
     def init_riot_api(self):
-        with open(".riot_api_key", "r", encoding="utf-8") as t:
-            self.riot_api_key = t.readline()
-        log("riot_api_key initialized to : {}".format(self.riot_api_key))
+        credentials = utils.get_config().credentials
+        self.riot_api_key = credentials['riot_api_key']
+        log("riot_api_key was initialized to : {}".format(self.riot_api_key[:5]+''.join('X' if c.isalpha() or c.isdigit() else c for c in self.riot_api_key[5:])))
 
     def is_setup_already(self, guild):
         return self.guild.count_documents({"_id": guild.id})
