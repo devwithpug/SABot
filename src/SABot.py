@@ -1,4 +1,4 @@
-import discord, asyncio, os, watcher, utils
+import discord, asyncio, os, watcher, utils, time, aiohttp
 from PIL import Image
 from io import BytesIO
 from discord.ext import commands, tasks
@@ -32,7 +32,7 @@ async def on_ready():
     
     log("We have logged in as {}".format(bot.user))
     log("Guild List : {}".format(str(bot.guilds)))
-    
+    update_locale_data.start()
     setup.wt.load_summoner_list(bot.guilds)
     for guild in bot.guilds:
         setup.lt[guild.id] = True
@@ -192,7 +192,7 @@ async def l(ctx, *args):
             )
             await ctx.send(embed=embed, delete_after=0.5)
 
-            content = setup.wt.load_live_match_data(
+            content = await setup.wt.load_live_match_data(
                 ctx.guild, response.json()["id"], False
             )
 
@@ -271,6 +271,12 @@ async def l(ctx, *args):
         )
 
 
+@tasks.loop(minutes=30.0)
+async def update_locale_data():
+    setup.wt.update_locale_data()
+    log("Data Dragon maps and queues data was updated")
+
+
 @tasks.loop(seconds=60.0)
 async def live_game_tracker():
     # There is possibility of some errors during API requests.
@@ -280,60 +286,53 @@ async def live_game_tracker():
 
     setup.wt.update_ddragon_data()
 
-    for guild in bot.guilds:
-        if setup.lt[guild.id] is False:
-            continue
-        
-        setup.wt.remove_ended_match(guild)
-        locale = get_locale(guild)
-        channel = get_guild_channel(guild)
-
-        for summonerName in setup.wt.get_summoner_list(guild.id):
-            response = setup.wt.search_summoner(guild, summonerName)
-            if response.status_code == 200 and setup.wt.search_live_match(
-                guild, response.json()["id"]
-            ):
-                embed = discord.Embed(
-                    title=locale['match_found'],
-                    description=locale['loading'],
-                    colour=discord.Colour.green(),
-                )
-                await channel.send(embed=embed, delete_after=1.0)
-
-                # match found
-                content = setup.wt.load_live_match_data(guild, response.json()["id"])
-
-                if type(content) is Image.Image:
-                    with BytesIO() as image_binary:
-                        content.save(image_binary, "PNG")
-                        image_binary.seek(0)
-                        await channel.send(
-                            file=discord.File(fp=image_binary, filename="image.png")
-                        )
-                elif type(content) is str:
-                    await channel.send(content=content)
-                else:
-                    continue
+    tasks = [process_per_guild_async(guild) for guild in bot.guilds]
+    await asyncio.wait(tasks)
 
 
-def preview_current_game(name, guild, lt=True):
-    response = setup.wt.search_summoner(guild, name)
-    if response.status_code == 200 and setup.wt.search_live_match(
-        guild, response.json()["id"], False
-    ):
-        content = setup.wt.load_live_match_data(guild, response.json()["id"], lt)
+async def process_per_guild_async(guild):
+    if setup.lt[guild.id] is False:
+        return
+    
+    setup.wt.remove_ended_match(guild)
+    locale = get_locale(guild)
+    channel = get_guild_channel(guild)
 
-        if type(content) is Image.Image:
-            return ["200", content]
-        elif type(content) is str:
-            return ["403", content]
-        else:
-            return
+    summoners = await setup.wt.search_summoner_from_list(guild, setup.wt.get_summoner_list(guild.id))
+    result = await setup.wt.search_live_match(guild, summoners)
+
+    for id_ in result:
+        await process_live_match_async(guild, id_, locale, channel)
+        await asyncio.sleep(60.0)
+
+async def process_live_match_async(guild, id_, locale, channel):
+    embed = discord.Embed(
+        title=locale['match_found'],
+        description=locale['loading'],
+        colour=discord.Colour.green(),
+    )
+    await channel.send(embed=embed, delete_after=1.0)
+    await send_match_data_async(guild, id_, channel)
+
+
+async def send_match_data_async(guild, id_, channel):
+    st = time.time()
+    content = await setup.wt.load_live_match_data(guild, id_)
+    print("loaded in : ", time.time() - st)    
+    if type(content) is Image.Image:
+        with BytesIO() as image_binary:
+            content.save(image_binary, "PNG")
+            image_binary.seek(0)
+            await channel.send(
+                file=discord.File(fp=image_binary, filename="image.png")
+            )
+    elif type(content) is str:
+        await channel.send(content=content)
 
 
 def get_locale(guild):
     config = utils.get_locale_config()
-    locale = config.locale['en']
+    locale = config.locale['na1']
     region = setup.wt.get_guild_region(guild)
 
     if region in config.locale:

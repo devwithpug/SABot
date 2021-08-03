@@ -69,7 +69,7 @@ For information such as game modes and maps, check the link below provided by CD
 
 ```yaml
 locale: {
-  en: {
+  na1: {
     queues: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/queues.json,
     maps: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/maps.json,
 

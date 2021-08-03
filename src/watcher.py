@@ -1,8 +1,10 @@
+from types import SimpleNamespace
 import pandas as pd
-import os, requests, utils, wrapper
+import os, requests, utils, wrapper, asyncio
 from pymongo.mongo_client import MongoClient
 from utils import log, logErr
 
+import time, aiohttp
 
 class watcher:
     def __init__(self):
@@ -25,6 +27,8 @@ class watcher:
         self.db = MongoClient(self.cluster).get_database("sabot")
         self.guild = self.db["Guild"]
         self.user = self.db["User"]
+        self.locale_queues = {}
+        self.locale_maps = {}
         self.champ_version = None
         self.update_ddragon_data()
         self.live_game_id = {}
@@ -58,6 +62,15 @@ class watcher:
         self.static_champ_list = requests.get(url + "champion.json").json()
         self.static_spell_list = requests.get(url + "summoner.json").json()
 
+    def update_locale_data(self):
+
+        config = utils.get_locale_config()
+        locale = config.locale
+        
+        for l in locale:
+            self.locale_queues[l] = requests.get(locale[l]['queues']).json()
+            self.locale_maps[l] = requests.get(locale[l]['maps']).json()
+
     def setup(self, region, guild):
         if self.guild.count_documents({"_id": guild.id}):
             self.guild.update_one(
@@ -65,7 +78,7 @@ class watcher:
                 {"$set": {"guild_name": guild.name, "region": region}},
             )
         else:
-            self.guild.insert(
+            self.guild.insert_one(
                 {"_id": guild.id, "guild_name": guild.name, "region": region}
             )
 
@@ -206,49 +219,76 @@ class watcher:
         response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
         return response
 
-    def search_summoner(self, guild, name):
-        url = (
-            "https://{}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{}".format(
-                self.guild_region[guild.id], name
-            )
-        )
-        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
-        return response
-
     def get_guild_region(self, guild):
         return self.guild_region[guild.id]
 
     def get_locale(self, region):
         config = utils.get_locale_config()
-        locale = config.locale['en']
+        locale = config.locale['na1']
 
         if region in config.locale:
             locale = config.locale[region]
         return locale
 
-    def search_live_match(self, guild, summonerId, dup=True):
-        url = "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
-            self.guild_region[guild.id], summonerId
-        )
-        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
-        if response.status_code == 200 and dup:
-            try:
-                matchId = response.json()["gameId"]
-                if (
-                    matchId in self.live_game_id[guild.id]
-                    or matchId in self.ended_game_temp[guild.id]
-                ):
-                    return False
-                else:
-                    return True
-            except KeyError:
-                return True
-        elif response.status_code == 200 and not dup:  # l match
-            return True
-        else:
-            return False
+    async def search_live_match(self, guild, summoners, dup=True):
+        response = []
 
-    def load_live_match_data(self, guild, match, lt=True):
+        async with aiohttp.ClientSession(headers={"X-Riot-Token": self.riot_api_key}) as session:
+            for id_ in summoners:
+                url = (
+                    "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
+                        self.guild_region[guild.id], id_
+                    )
+                )
+
+                async with session.get(url) as r:
+                    if r.status == 200:
+                        game_id = (await r.json())['gameId']
+                        
+                        self.live_game_id.setdefault(guild.id, [])
+                        self.ended_game_temp.setdefault(guild.id, [])
+
+                        if (
+                            not game_id in self.live_game_id[guild.id] 
+                            and not game_id in self.ended_game_temp[guild.id]
+                        ):
+                            response.append(id_)
+
+            return response
+
+    async def search_summoner_from_list(self, guild, summoners):
+        response = []
+
+        async with aiohttp.ClientSession(headers={"X-Riot-Token": self.riot_api_key}) as session:
+            for name in summoners:
+                url = (
+                    "https://{}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{}".format(
+                        self.guild_region[guild.id], name
+                    )
+                )
+
+                async with session.get(url) as r:
+                    if r.status == 200:
+                        id_ = (await r.json())['id']
+                        response.append(id_)
+
+            return response
+
+    async def get_participants_data(self, data, region):
+        
+        async with aiohttp.ClientSession(headers={"X-Riot-Token": self.riot_api_key}) as session:
+
+            for i, participant in zip(range(10), data['participants']):
+                url = "https://{}.api.riotgames.com/lol/league/v4/entries/by-summoner/{}".format(
+                    region, participant["summonerId"]
+                )
+                
+                async with session.get(url) as r:
+                    row = await r.json()
+                    wrapper.update_participants(i, data['participants'], row)
+
+
+    async def load_live_match_data(self, guild, match, lt=True):
         """Call Riot API to receive live_match information.
 
         Args:
@@ -268,15 +308,8 @@ class watcher:
         response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
         if response.status_code != 200:
             return
-        elif response.status_code == 404:
-            return
-
-        queues = requests.get(locale['queues']).json()
-        maps = requests.get(locale['maps']).json()
         
         match = response.json()
-
-        data = {}
 
         if lt:
             try:
@@ -298,16 +331,15 @@ class watcher:
                 log("New live match was added : {}".format(match["gameId"]), guild)
                 log("Current tracking match list : {}".format(str(self.live_game_id[guild.id])), guild)
 
+        maps = self.locale_maps['na1'] if not region in self.locale_maps.keys() else self.locale_maps[region]
+        queues = self.locale_queues['na1'] if not region in self.locale_queues.keys() else self.locale_queues[region]
+
+        data = {}
+
         data['match_data'] = wrapper.get_match_data(match, queues, maps)
         data['participants'] = wrapper.get_participants(match, self.static_champ_list, self.static_spell_list)
 
-        for i, participant in zip(range(10), data['participants']):
-            url = "https://{}.api.riotgames.com/lol/league/v4/entries/by-summoner/{}".format(
-                region, participant["summonerId"]
-            )
-            row = requests.get(url, headers={"X-Riot-Token": self.riot_api_key}).json()
-
-            wrapper.update_participants(i, data['participants'], row)
+        await self.get_participants_data(data, region)
 
         df = pd.DataFrame(data['participants'])
         print(df)
