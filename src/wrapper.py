@@ -62,6 +62,7 @@ def update_participants(i, participants, row):
     if len(row) != 0:
         ranked_solo_index = 0
         for league in row:
+            assert type(league) is dict
             if league["queueType"] == "RANKED_SOLO_5x5":
                 break
             else:

@@ -230,6 +230,17 @@ class watcher:
             locale = config.locale[region]
         return locale
 
+    def search_one_live_match(self, guild, summoner):
+        url = "https://{}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{}".format(
+            self.guild_region[guild.id], summoner
+        )
+        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
+
+        if response.status_code == 200:  # l match
+            return True
+        else:
+            return False
+
     async def search_live_match(self, guild, summoners, dup=True):
         response = []
 
@@ -255,6 +266,13 @@ class watcher:
                             response.append(id_)
 
             return response
+
+    def search_summoner(self, guild, summoner):
+        url = "https://{}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{}".format(
+            self.guild_region[guild.id], summoner
+        )
+        response = requests.get(url, headers={"X-Riot-Token": self.riot_api_key})
+        return response
 
     async def search_summoner_from_list(self, guild, summoners):
         response = []
@@ -339,7 +357,11 @@ class watcher:
         data['match_data'] = wrapper.get_match_data(match, queues, maps)
         data['participants'] = wrapper.get_participants(match, self.static_champ_list, self.static_spell_list)
 
-        await self.get_participants_data(data, region)
+        try:
+            await self.get_participants_data(data, region)
+        except AssertionError as ex:
+            logErr("AssertionError : {}".format(ex))
+            return locale['error']
 
         df = pd.DataFrame(data['participants'])
         print(df)

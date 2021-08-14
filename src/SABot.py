@@ -181,8 +181,8 @@ async def l(ctx, *args):
         response = setup.wt.search_summoner(ctx.guild, name)
 
         # match found
-        if response.status_code == 200 and setup.wt.search_live_match(
-            ctx.guild, response.json()["id"], False
+        if response.status_code == 200 and setup.wt.search_one_live_match(
+            ctx.guild, response.json()["id"]
         ):
 
             embed = discord.Embed(
