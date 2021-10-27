@@ -29,7 +29,7 @@
 ### You need to install python packages with pip:
 
 * requirements.txt
-```json
+```txt
 discord.py==1.7.3
 pillow==8.0.1
 pymongo==3.12.0
